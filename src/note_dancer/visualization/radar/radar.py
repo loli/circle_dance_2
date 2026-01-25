@@ -4,7 +4,7 @@ import math
 import pygame
 
 from note_dancer.visualization.base.audioviz import AudioVisualizationBase
-from note_dancer.visualization.base.hud import HUD, NumericParameter
+from note_dancer.visualization.base.hud import BooleanParameter, NumericParameter
 
 # --- Setup ---
 WIDTH, HEIGHT = 900, 900
@@ -80,57 +80,70 @@ class NoteTrace:
 
 class InteractiveStaff(AudioVisualizationBase):
     def __init__(self) -> None:
-        # 1. Initialize the Audio Brain (Base Class)
         super().__init__()
 
-        # 2. Register LOCAL Parameters (These will appear in the Top-Left HUD)
-        self.max_node_size = self.hud.register(
-            NumericParameter("Max Node Size", 95.0, 5.0, 150.0, 5.0, fmt="{:.0f}", category="local")
-        )
-        self.lag_comp = self.hud.register(
-            NumericParameter(
-                "Lag Comp",
-                2.0,
-                0.0,
-                30.0,
-                0.5,
-                fmt="{:.1f}°",
-                category="local",
-            )
-        )
-        self.inner_radius = self.hud.register(
-            NumericParameter("Inner Radius", 160.0, 20.0, 300.0, 5.0, fmt="{:.0f}", category="local")
-        )
+        # 1. Register LOCAL Parameters
+        self.beat_pulse_enabled = self.hud.register(BooleanParameter("Beat Pulse", True))
 
-        # Internal Visual State
-        self.ring_spacing = 25.0
+        self.max_node_size = self.hud.register(NumericParameter("Max Node Size", 95.0, 5.0, 150.0, 5.0, fmt="{:.0f}"))
+        self.lag_comp = self.hud.register(NumericParameter("Lag Comp", 2.0, 0.0, 30.0, 0.5, fmt="{:.1f}°"))
+        self.inner_radius = self.hud.register(NumericParameter("Inner Radius", 160.0, 20.0, 300.0, 5.0, fmt="{:.0f}"))
+
+        # 2. Visual Physics State (Moved from Base)
         self.scanning_angle = 0.0
+        self.rotation_speed = 2.0
+        self.decay_rate = 1.0
+        self.beat_boost = 0.0
+
+        # Internal State
+        self.ring_spacing = 25.0
         self.active_traces = []
+
+    def _calculate_rotation_physics(self):
+        """Translates current BPM into rotational constants."""
+        # Constants for 60FPS movement
+        beats_per_rotation = 16
+        # frames = (seconds_per_beat * beats_per_rotation) * fps
+        total_frames = ((60.0 / self.bpm) * beats_per_rotation) * 60.0
+
+        self.rotation_speed = 360.0 / total_frames
+        # Decay ensures traces last exactly one full loop (360 degrees)
+        self.decay_rate = 255.0 / (360.0 / self.rotation_speed)
 
     def update(self) -> None:
         """Main update loop: handles audio events and physics."""
-        # 1. Process Audio through the Base Class 'Brain'
-        # This returns only the notes that pass the noise floor, sensitivity, and attack gates.
+        # 1. Get raw audio events from the clean Base Class
         new_events = self.process_audio_frame()
 
-        # 2. Create new visual traces for triggered notes
+        # 2. Update Subclass-specific Physics
+        self._calculate_rotation_physics()
+
+        # Beat Pulse Logic (Moved from Base)
+        if self.receiver.beat_detected and self.beat_pulse_enabled.value:
+            self.beat_boost = 1.0
+
+        # Decay the boost over time
+        self.beat_boost *= 0.85
+        if self.beat_boost < 0.01:
+            self.beat_boost = 0
+
+        # 3. Create new visual traces
         for note in new_events:
             self.active_traces.append(
                 NoteTrace(
                     note["index"],
                     self.scanning_angle,
                     note["energy"],
-                    self.decay_rate,  # Calculated by Base (BPM synced)
+                    self.decay_rate,
                     self.inner_radius.value,
                     self.ring_spacing,
                     self.max_node_size.value,
                 )
             )
 
-        # 3. Update Scanning Angle
+        # 4. Update Scanning Angle & Traces
         self.scanning_angle = (self.scanning_angle + self.rotation_speed) % 360
 
-        # 4. Update and Cull Traces
         for t in self.active_traces:
             t.update()
         self.active_traces = [t for t in self.active_traces if t.life > 0]
@@ -138,26 +151,22 @@ class InteractiveStaff(AudioVisualizationBase):
     def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Renders the Radar, Rings, and Traces."""
 
-        # Background reacts to the beat (beat_boost is from Base Class)
+        # Use self.brightness from the Base Class for visual intensity
         bg_val = max(0, 15 - int(self.beat_boost * 10))
         screen.fill((bg_val, bg_val, bg_val + 5))
 
         # 1. Draw Concentric Rings
-        # They 'duck' slightly on the beat
-        duck_offset = self.beat_boost * 15.0 if self.beat_pulse_enabled.value else 0.0
+        duck_offset = self.beat_boost * 15.0
         for i in range(12):
             r = self.inner_radius.value + (i * self.ring_spacing) - duck_offset
             ring_bright = 30 + int(self.beat_boost * 30)
             pygame.draw.circle(screen, (ring_bright, ring_bright, ring_bright + 10), CENTER, int(r), 1)
 
         # 2. Draw Active Note Traces
-        # draw_boost handles the 'swell' effect on the beat
-        draw_boost = self.beat_boost if self.beat_pulse_enabled.value else 0.0
         for t in self.active_traces:
-            t.draw(screen, draw_boost, self.lag_comp.value, self.current_brightness)
+            t.draw(screen, self.beat_boost, self.lag_comp.value, self.brightness)
 
         # 3. Draw Scanning Radar Line
-        # Brightness comes from the spectral centroid in the Base Class
         rad = math.radians(self.scanning_angle - 90)
         line_len = self.inner_radius.value + 12 * self.ring_spacing
         end_pos = (
@@ -165,8 +174,9 @@ class InteractiveStaff(AudioVisualizationBase):
             CENTER[1] + line_len * math.sin(rad),
         )
 
-        line_width = int(2 + (self.current_brightness * 8))
-        line_color = (int(200 + (self.current_brightness * 55)), int(200 + (self.current_brightness * 55)), 255)
+        line_width = int(2 + (self.brightness * 8))
+        # Use blue theme for the radar line
+        line_color = (int(200 + (self.brightness * 55)), int(200 + (self.brightness * 55)), 255)
         pygame.draw.line(screen, line_color, CENTER, end_pos, line_width)
 
 
