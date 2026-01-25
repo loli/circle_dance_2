@@ -1,17 +1,14 @@
-import pygame
-import math
 import colorsys
-from note_dancer.visualization.base.receiver import AudioReceiver
-from note_dancer.visualization.base.hud import HUD
-import pygame
 import math
+
+import pygame
+
 from note_dancer.visualization.base.audioviz import AudioVisualizationBase
+from note_dancer.visualization.base.hud import HUD, NumericParameter
 
 # --- Setup ---
 WIDTH, HEIGHT = 900, 900
 CENTER = (WIDTH // 2, HEIGHT // 2)
-
-
 
 
 class NoteTrace:
@@ -65,26 +62,31 @@ class NoteTrace:
 
         surface.blit(note_surf, (x - surf_dim // 2, y - surf_dim // 2))
 
+
 class InteractiveStaff(AudioVisualizationBase):
     def __init__(self, hud):
         # 1. Initialize the Audio Brain (Base Class)
         super().__init__(hud)
 
         # 2. Register LOCAL Parameters (These will appear in the Top-Left HUD)
-        self.max_node_size = self.hud.add(
-            "Max Node Size", 95.0, 5.0, 150.0, 5.0, 
-            (pygame.K_9, pygame.K_0), fmt="{:.0f}", category="local"
+        self.max_node_size = self.hud.register(
+            NumericParameter("Max Node Size", 95.0, 5.0, 150.0, 5.0, fmt="{:.0f}", category="local")
         )
-        self.lag_comp = self.hud.add(
-            "Lag Comp", 2.0, 0.0, 30.0, 0.5,
-            ([pygame.K_MINUS, pygame.K_KP_MINUS], [pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS]),
-            fmt="{:.1f}°", category="local"
+        self.lag_comp = self.hud.register(
+            NumericParameter(
+                "Lag Comp",
+                2.0,
+                0.0,
+                30.0,
+                0.5,
+                fmt="{:.1f}°",
+                category="local",
+            )
         )
-        self.inner_radius = self.hud.add(
-            "Inner Radius", 160.0, 20.0, 300.0, 5.0, 
-            (pygame.K_DOWN, pygame.K_UP), fmt="{:.0f}", category="local"
+        self.inner_radius = self.hud.register(
+            NumericParameter("Inner Radius", 160.0, 20.0, 300.0, 5.0, fmt="{:.0f}", category="local")
         )
-        
+
         # Internal Visual State
         self.ring_spacing = 25.0
         self.scanning_angle = 0.0
@@ -103,7 +105,7 @@ class InteractiveStaff(AudioVisualizationBase):
                     note["index"],
                     self.scanning_angle,
                     note["energy"],
-                    self.decay_rate,        # Calculated by Base (BPM synced)
+                    self.decay_rate,  # Calculated by Base (BPM synced)
                     self.inner_radius.value,
                     self.ring_spacing,
                     self.max_node_size.value,
@@ -146,13 +148,9 @@ class InteractiveStaff(AudioVisualizationBase):
             CENTER[0] + line_len * math.cos(rad),
             CENTER[1] + line_len * math.sin(rad),
         )
-        
+
         line_width = int(2 + (self.current_brightness * 8))
-        line_color = (
-            int(200 + (self.current_brightness * 55)), 
-            int(200 + (self.current_brightness * 55)), 
-            255
-        )
+        line_color = (int(200 + (self.current_brightness * 55)), int(200 + (self.current_brightness * 55)), 255)
         pygame.draw.line(screen, line_color, CENTER, end_pos, line_width)
 
         # 4. Delegate UI Drawing to Base HUD (Handles Global vs Local layout)

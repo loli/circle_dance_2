@@ -1,78 +1,182 @@
-import pygame
-import time
 import collections
+import time
 
-class Tunable:
-    def __init__(self, name, val, min_v, max_v, step, keys, fmt="{:.2f}", transformer=None, category="local"):
+import pygame
+
+
+class KeyManager:
+    """Static utility class to manage available keys globally."""
+
+    # Class-level attributes (Shared across all calls)
+    _single_keys = collections.deque(
+        [pygame.K_y, pygame.K_x, pygame.K_c, pygame.K_v, pygame.K_b, pygame.K_n, pygame.K_m]
+    )
+
+    _pair_keys = collections.deque(
+        [
+            (pygame.K_q, pygame.K_a),
+            (pygame.K_w, pygame.K_s),
+            (pygame.K_e, pygame.K_d),
+            (pygame.K_r, pygame.K_f),
+            (pygame.K_t, pygame.K_g),
+            (pygame.K_z, pygame.K_h),
+            (pygame.K_u, pygame.K_j),
+            (pygame.K_i, pygame.K_k),
+            (pygame.K_o, pygame.K_l),
+        ]
+    )
+
+    @classmethod
+    def get_single(cls) -> int:
+        if not cls._single_keys:
+            raise IndexError("No single keys left in the pool.")
+        return cls._single_keys.popleft()
+
+    @classmethod
+    def get_pair(cls) -> tuple[int, int]:
+        if not cls._pair_keys:
+            raise IndexError("No key pairs left in the pool.")
+        return cls._pair_keys.popleft()
+
+
+class BooleanParameter:
+    def __init__(self, name: str, val: bool, category: str = "local") -> None:
+        """
+        Represents a boolean parameter that can be toggled using a single key.
+
+        Args:
+            name: The name of the parameter.
+            val: The initial value of the parameter (True/False).
+            category: The category of the parameter ("global" or "local").
+        """
+        self.name = name
+        self.value = val
+        self.key = KeyManager.get_single()
+        self.category = category
+
+    def handle(self, key: int) -> bool:
+        """
+        Handles keyboard input to toggle the parameter.
+
+        Args:
+            key: The key pressed.
+
+        Returns:
+            True if the parameter was toggled, False otherwise.
+        """
+        if key == self.key:
+            self.value = not self.value
+            return True
+        return False
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the parameter.
+
+        Returns:
+            A formatted string showing the parameter name, value, and associated key.
+        """
+        v_str = "ON" if self.value else "OFF"
+        k_str = f"[{pygame.key.name(self.key).upper()}]"
+        return f"{k_str:<12} {self.name}: {v_str}"
+
+    def __bool__(self) -> bool:
+        return self.value
+
+
+class NumericParameter:
+    def __init__(
+        self,
+        name: str,
+        val: float,
+        min_v: float,
+        max_v: float,
+        step: float,
+        fmt: str = "{:.2f}",
+        category: str = "local",
+    ) -> None:
+        """
+        Represents a numeric parameter that can be adjusted using keyboard input.
+
+        Args:
+            name: The name of the parameter.
+            val: The initial value of the parameter.
+            min_v: The minimum value of the parameter.
+            max_v: The maximum value of the parameter.
+            step: The step size for incrementing or decrementing the value.
+            fmt: The format string for displaying the parameter value.
+            category: The category of the parameter ("global" or "local").
+        """
         self.name = name
         self.value = val
         self.min_v = min_v
         self.max_v = max_v
         self.step = step
-        self.keys = keys
+        self.keys = KeyManager.get_pair()
         self.fmt = fmt
-        self.transformer = transformer
-        self.category = category  # "global" or "local"
+        self.category = category
 
-    def handle(self, key):
-        if isinstance(self.keys, int):
-            if key == self.keys:
-                self.value = not self.value
-                return True
-            return False
+    def handle(self, key: int) -> bool:
+        """
+        Handles keyboard input to adjust the parameter.
 
+        Args:
+            key: The key pressed.
+
+        Returns:
+            True if the parameter was adjusted, False otherwise.
+        """
         dec, inc = self.keys
-        if not isinstance(dec, (list, tuple)): dec = [dec]
-        if not isinstance(inc, (list, tuple)): inc = [inc]
 
-        if key in dec:
-            self._update(-1)
+        if key == dec:
+            self.value -= self.step
+            self.value = max(self.min_v, min(self.max_v, self.value))
             return True
-        if key in inc:
-            self._update(1)
+        elif key == inc:
+            self.value += self.step
+            self.value = max(self.min_v, min(self.max_v, self.value))
             return True
+
         return False
 
-    def _update(self, direction):
-        if self.transformer:
-            self.value = self.transformer(self.value, self.step, direction)
-        else:
-            self.value += self.step * direction
-        if isinstance(self.value, (int, float)):
-            self.value = max(self.min_v, min(self.max_v, self.value))
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the parameter.
 
-    def __str__(self):
-        if isinstance(self.value, bool):
-            v_str = "ON" if self.value else "OFF"
-            k_str = f"[{pygame.key.name(self.keys).upper()}]"
-        else:
-            v_str = self.fmt.format(self.value)
-            k1 = self.keys[0] if not isinstance(self.keys[0], (list, tuple)) else self.keys[0][0]
-            k2 = self.keys[1] if not isinstance(self.keys[1], (list, tuple)) else self.keys[1][0]
-            k_str = f"[{pygame.key.name(k1).upper()}/{pygame.key.name(k2).upper()}]"
+        Returns:
+            A formatted string showing the parameter name, value, and associated keys.
+        """
+        v_str = self.fmt.format(self.value)
+        k1, k2 = self.keys
+        k_str = f"[{pygame.key.name(k1).upper()}/{pygame.key.name(k2).upper()}]"
         return f"{k_str:<12} {self.name}: {v_str}"
 
-class HUD:
-    DB_MIN = -100.0
-    DB_MAX = 0.0
+    def __float__(self) -> float:
+        return self.value
 
+
+class HUD:
     def __init__(self):
+        """Default visualization interface and parameter manager."""
         self.params = []
         self.show_help = False
         self.help_timer = 0
         self.msg = ""
         self.msg_timer = 0
-        # The core Noise Floor parameter (Global)
-        self.noise_floor = self.add("Noise Floor", -40.0, self.DB_MIN, self.DB_MAX, 1.0, 
-                                    (pygame.K_COMMA, pygame.K_PERIOD), fmt="{:.1f} dB", category="global")
         self.rms_history = collections.deque(maxlen=200)
 
-    def add(self, *args, **kwargs):
-        t = Tunable(*args, **kwargs)
-        self.params.append(t)
-        return t
+    def register(self, p: NumericParameter | BooleanParameter) -> NumericParameter | BooleanParameter:
+        """Register a new parameter with the HUD."""
+        self.params.append(p)
+        return p
 
-    def handle_input(self, key):
+    def handle_input(self, key: int) -> None:
+        """
+        Handles keyboard input to adjust parameters or toggle help.
+
+        Args:
+            key: The key pressed.
+        """
         if key == pygame.K_h:
             self.show_help = not self.show_help
             self.help_timer = time.time() + 30.0 if self.show_help else 0
@@ -84,63 +188,77 @@ class HUD:
                 self.msg_timer = time.time() + 2.0
                 return
 
+    def draw_scene_controls(self, surface, font):
+        """Local Visualization Params / Scene Controls Panel (Top-Left)"""
+        local_params = [p for p in self.params if p.category == "local"]
+        if local_params:
+            # Theme Colors
+            COLOR_HEADER = (0, 255, 150)
+            COLOR_TEXT = (0, 255, 150)
+            LINE_HEIGHT = 25
+
+            # 1. Render Header
+            header_img = font.render("--- SCENE CONTROLS ---", True, COLOR_HEADER)
+
+            # 2. Calculate Background Size
+            # We add an extra line for the header + a small buffer
+            bg_h = 30 + ((len(local_params) + 1) * LINE_HEIGHT)
+            bg_l = pygame.Surface((400, bg_h), pygame.SRCALPHA)
+            bg_l.fill((0, 0, 0, 160))
+
+            # 3. Blit to Main Surface
+            surface.blit(bg_l, (10, 10))
+            surface.blit(header_img, (20, 20))
+
+            # 4. Render Parameters (offset by header height)
+            for i, p in enumerate(local_params):
+                img = font.render(str(p), True, COLOR_TEXT)
+                # Starting at y=50 to leave room for the header at y=20
+                surface.blit(img, (20, 50 + i * LINE_HEIGHT))
+
+    def draw_audio_controls(self, surface, font):
+        """Global Audio Processing Params / Audio Engine Panel (Bottom-Right)"""
+        global_params = [p for p in self.params if p.category == "global"]
+        if global_params:
+            # Setup Dimensions and Colors
+            sw, sh = surface.get_width(), surface.get_height()
+            box_w, box_h = 450, 220
+            COLOR_HEADER = (0, 220, 255)  # Cyan for Global
+            COLOR_TEXT = (0, 220, 255)
+            LINE_HEIGHT = 25
+
+            # 1. Create Panel Surface
+            br_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+            br_surf.fill((0, 0, 0, 160))
+
+            # 2. Render Header
+            header_img = font.render("--- AUDIO CONTROLS ---", True, COLOR_HEADER)
+            br_surf.blit(header_img, (20, 20))
+
+            # 3. Render Global Parameters
+            for i, p in enumerate(global_params):
+                img = font.render(str(p), True, COLOR_TEXT)
+                # Offset by 55 to leave room for the header
+                br_surf.blit(img, (20, 55 + i * LINE_HEIGHT))
+
+            # 4. Final Blit to Screen (Bottom-Right)
+            surface.blit(br_surf, (sw - box_w - 10, sh - box_h - 10))
+
     def draw(self, surface, font, current_rms=0.0):
         self.rms_history.append(current_rms)
         sw, sh = surface.get_width(), surface.get_height()
 
-        # 1. Draw Quick Feedback Message (if not in help mode)
-        if time.time() < self.msg_timer and not self.show_help:
+        # Draw Quick Feedback Message (if not in help mode)
+        if not self.show_help and time.time() < self.msg_timer:
             img = font.render(self.msg, True, (255, 255, 255))
             surface.blit(img, (20, 20))
+
+        if time.time() > self.help_timer:
+            self.show_help = False
 
         if not self.show_help:
             return
 
-        if time.time() > self.help_timer:
-            self.show_help = False
-            return
-
-        # 2. DRAW TOP-LEFT MENU (Local Visualization Params)
-        local_params = [p for p in self.params if p.category == "local"]
-        if local_params:
-            bg_l = pygame.Surface((400, 20 + len(local_params) * 25), pygame.SRCALPHA)
-            bg_l.fill((0, 0, 0, 160))
-            surface.blit(bg_l, (10, 10))
-            for i, p in enumerate(local_params):
-                img = font.render(str(p), True, (0, 255, 150)) # Greenish for Local
-                surface.blit(img, (20, 20 + i * 25))
-
-        # 3. DRAW BOTTOM-RIGHT PANEL (Global Audio & Histogram)
-        global_params = [p for p in self.params if p.category == "global"]
-        box_w, box_h = 450, 220
-        br_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        br_surf.fill((0, 0, 0, 160))
-
-        # --- Histogram Logic ---
-        m_w, m_h = 30, 180
-        m_x, m_y = box_w - 180, (box_h - m_h) // 2
-        
-        # Draw Bars
-        bins = [0] * 50
-        for v in self.rms_history:
-            norm_v = (v - self.DB_MIN) / (self.DB_MAX - self.DB_MIN)
-            idx = int(max(0, min(1.0, norm_v)) * 49)
-            bins[idx] += 1
-
-        for i, count in enumerate(bins):
-            if count > 0:
-                bar_w = int((count / len(self.rms_history)) * 120)
-                bar_y = m_y + m_h - int((i + 1) * (m_h / 50))
-                pygame.draw.rect(br_surf, (0, 200, 255), (m_x, bar_y, bar_w, int(m_h / 50)))
-
-        # Draw Floor Line
-        norm_floor = (self.noise_floor.value - self.DB_MIN) / (self.DB_MAX - self.DB_MIN)
-        floor_y = m_y + m_h - int(norm_floor * m_h)
-        pygame.draw.line(br_surf, (255, 50, 50), (m_x - 10, floor_y), (m_x + 130, floor_y), 2)
-
-        # Draw Global Text Params (to the left of the meter)
-        for i, p in enumerate(global_params):
-            img = font.render(str(p), True, (0, 220, 255)) # Cyan for Global
-            br_surf.blit(img, (20, 20 + i * 25))
-
-        surface.blit(br_surf, (sw - box_w - 10, sh - box_h - 10))
+        # from here: show help/status panels
+        self.draw_scene_controls(surface, font)
+        self.draw_audio_controls(surface, font)

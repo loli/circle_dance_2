@@ -7,7 +7,7 @@ name = "note-dancer"
 version = "0.1.0"
 description = "Real-time audio analysis and visualization"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Oskar Maier", email = "oskar.maier@gmail.com" }]
 keywords = ["audio", "visualization", "bpm", "chroma", "music"]
@@ -18,12 +18,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 
 dependencies = ["pyaudio", "numpy", "librosa", "aubio", "pygame"]
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy"]
+dev = ["pytest", "ruff", "mypy"]
 
 [project.scripts]
 audio-engine = "note_dancer.engine.main:run_engine"
@@ -35,3 +37,9 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["note_dancer*"]
+
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.lint]
+select = ["E", "F", "I"] # Enable standard linting rules (Pyflakes, pycodestyle)
