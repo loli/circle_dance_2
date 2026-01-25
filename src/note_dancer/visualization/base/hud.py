@@ -78,7 +78,7 @@ class BooleanParameter:
         """
         v_str = "ON" if self.value else "OFF"
         k_str = f"[{pygame.key.name(self.key).upper()}]"
-        return f"{k_str:<12} {self.name}: {v_str}"
+        return f"{k_str:<6} {self.name}: {v_str}"
 
     def __bool__(self) -> bool:
         return self.value
@@ -149,21 +149,20 @@ class NumericParameter:
         v_str = self.fmt.format(self.value)
         k1, k2 = self.keys
         k_str = f"[{pygame.key.name(k1).upper()}/{pygame.key.name(k2).upper()}]"
-        return f"{k_str:<12} {self.name}: {v_str}"
+        return f"{k_str:<6} {self.name}: {v_str}"
 
     def __float__(self) -> float:
         return self.value
 
 
 class HUD:
-    def __init__(self):
+    def __init__(self) -> None:
         """Default visualization interface and parameter manager."""
         self.params = []
         self.show_help = False
         self.help_timer = 0
         self.msg = ""
         self.msg_timer = 0
-        self.rms_history = collections.deque(maxlen=200)
 
     def register(self, p: NumericParameter | BooleanParameter) -> NumericParameter | BooleanParameter:
         """Register a new parameter with the HUD."""
@@ -188,7 +187,7 @@ class HUD:
                 self.msg_timer = time.time() + 2.0
                 return
 
-    def draw_scene_controls(self, surface, font):
+    def draw_scene_controls(self, surface: pygame.Surface, font: pygame.font.Font) -> None:
         """Local Visualization Params / Scene Controls Panel (Top-Left)"""
         local_params = [p for p in self.params if p.category == "local"]
         if local_params:
@@ -216,38 +215,41 @@ class HUD:
                 # Starting at y=50 to leave room for the header at y=20
                 surface.blit(img, (20, 50 + i * LINE_HEIGHT))
 
-    def draw_audio_controls(self, surface, font):
-        """Global Audio Processing Params / Audio Engine Panel (Bottom-Right)"""
+    def draw_audio_controls(self, surface: pygame.Surface, font: pygame.font.Font, audio_state: dict) -> None:
         global_params = [p for p in self.params if p.category == "global"]
-        if global_params:
-            # Setup Dimensions and Colors
-            sw, sh = surface.get_width(), surface.get_height()
-            box_w, box_h = 450, 220
-            COLOR_HEADER = (0, 220, 255)  # Cyan for Global
-            COLOR_TEXT = (0, 220, 255)
-            LINE_HEIGHT = 25
+        if not global_params:
+            return
 
-            # 1. Create Panel Surface
-            br_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-            br_surf.fill((0, 0, 0, 160))
-
-            # 2. Render Header
-            header_img = font.render("--- AUDIO CONTROLS ---", True, COLOR_HEADER)
-            br_surf.blit(header_img, (20, 20))
-
-            # 3. Render Global Parameters
-            for i, p in enumerate(global_params):
-                img = font.render(str(p), True, COLOR_TEXT)
-                # Offset by 55 to leave room for the header
-                br_surf.blit(img, (20, 55 + i * LINE_HEIGHT))
-
-            # 4. Final Blit to Screen (Bottom-Right)
-            surface.blit(br_surf, (sw - box_w - 10, sh - box_h - 10))
-
-    def draw(self, surface, font, current_rms=0.0):
-        self.rms_history.append(current_rms)
         sw, sh = surface.get_width(), surface.get_height()
+        # Box is wider now to accommodate graphs on the right
+        box_w, box_h = 600, 40 + (len(global_params) * 40)
 
+        br_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+        br_surf.fill((0, 0, 0, 160))
+
+        # Header
+        br_surf.blit(font.render("--- AUDIO ENGINE ---", True, (0, 220, 255)), (20, 10))
+
+        for i, p in enumerate(global_params):
+            y_offset = 45 + (i * 40)
+
+            # 1. Draw the Label
+            br_surf.blit(font.render(str(p), True, (0, 220, 255)), (20, y_offset))
+
+            # 2. Define a "Graph Rect" to the right of the text
+            graph_rect = pygame.Rect(350, y_offset, 230, 30)
+
+            # 3. Create a sub-surface for the parameter to draw on
+            # This keeps the parameter's drawing code relative to (0,0)
+            sub_surf = br_surf.subsurface(graph_rect)
+
+            # 4. Let the parameter draw its specific visualization
+            if hasattr(p, "draw_visual"):
+                p.draw_visual(sub_surf, audio_state)
+
+        surface.blit(br_surf, (sw - box_w - 10, sh - box_h - 10))
+
+    def draw(self, surface: pygame.Surface, font: pygame.font.Font, audio_state: dict) -> None:
         # Draw Quick Feedback Message (if not in help mode)
         if not self.show_help and time.time() < self.msg_timer:
             img = font.render(self.msg, True, (255, 255, 255))
@@ -261,4 +263,4 @@ class HUD:
 
         # from here: show help/status panels
         self.draw_scene_controls(surface, font)
-        self.draw_audio_controls(surface, font)
+        self.draw_audio_controls(surface, font, audio_state)

@@ -12,7 +12,16 @@ CENTER = (WIDTH // 2, HEIGHT // 2)
 
 
 class NoteTrace:
-    def __init__(self, note_index, angle, energy, decay_rate, inner_r, spacing, max_size):
+    def __init__(
+        self,
+        note_index: int,
+        angle: float,
+        energy: float,
+        decay_rate: float,
+        inner_r: float,
+        spacing: float,
+        max_size: float,
+    ) -> None:
         self.note_index = note_index
         self.angle = angle
         self.energy = energy
@@ -24,10 +33,16 @@ class NoteTrace:
         rgb = colorsys.hsv_to_rgb(note_index / 12.0, 0.8, 1.0)
         self.color = (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
 
-    def update(self):
+    def update(self) -> None:
         self.life -= self.decay_rate
 
-    def draw(self, surface, current_boost, lag_comp, global_brightness):
+    def draw(
+        self,
+        surface: pygame.Surface,
+        current_boost: float,
+        lag_comp: float,
+        global_brightness: float,
+    ) -> None:
         # 1. Color Shift (Brightness logic)
         white_mix = global_brightness * 255
         current_color = (
@@ -64,9 +79,9 @@ class NoteTrace:
 
 
 class InteractiveStaff(AudioVisualizationBase):
-    def __init__(self, hud):
+    def __init__(self) -> None:
         # 1. Initialize the Audio Brain (Base Class)
-        super().__init__(hud)
+        super().__init__()
 
         # 2. Register LOCAL Parameters (These will appear in the Top-Left HUD)
         self.max_node_size = self.hud.register(
@@ -92,7 +107,7 @@ class InteractiveStaff(AudioVisualizationBase):
         self.scanning_angle = 0.0
         self.active_traces = []
 
-    def update(self):
+    def update(self) -> None:
         """Main update loop: handles audio events and physics."""
         # 1. Process Audio through the Base Class 'Brain'
         # This returns only the notes that pass the noise floor, sensitivity, and attack gates.
@@ -120,8 +135,9 @@ class InteractiveStaff(AudioVisualizationBase):
             t.update()
         self.active_traces = [t for t in self.active_traces if t.life > 0]
 
-    def draw(self, screen, font):
+    def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Renders the Radar, Rings, and Traces."""
+
         # Background reacts to the beat (beat_boost is from Base Class)
         bg_val = max(0, 15 - int(self.beat_boost * 10))
         screen.fill((bg_val, bg_val, bg_val + 5))
@@ -153,19 +169,15 @@ class InteractiveStaff(AudioVisualizationBase):
         line_color = (int(200 + (self.current_brightness * 55)), int(200 + (self.current_brightness * 55)), 255)
         pygame.draw.line(screen, line_color, CENTER, end_pos, line_width)
 
-        # 4. Delegate UI Drawing to Base HUD (Handles Global vs Local layout)
-        # Note: We pass receiver.rms which is now correctly in dB from the Base Class
-        self.hud.draw(screen, font, self.receiver.rms)
 
-
-def main():
+def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Interactive Radar - Debug Meter")
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("monospace", 18, bold=True)
 
-    viz = InteractiveStaff(HUD())
+    viz = InteractiveStaff()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

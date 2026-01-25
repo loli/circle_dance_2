@@ -1,7 +1,8 @@
-import socket
 import json
+import socket
+
 from note_dancer.config import UDP_IP, UDP_PORT
-from note_dancer.protocol import validate_message_or_raise, NOTES_LEN
+from note_dancer.protocol import NOTES_LEN, validate_message_or_raise
 
 
 class AudioReceiver:
@@ -36,8 +37,12 @@ class AudioReceiver:
                     self.beat_detected = True
                 if "notes" in decoded:
                     self.notes = [float(n) for n in decoded["notes"]]
-                    self.brightness = float(decoded.get("brightness", 0.0))  # don't like defaults here; I think, when notes, then this should always be there
-                    self.rms = float(decoded.get("rms", -100.0))  # don't like defaults here; I think, when notes, then this should always be there
+                    self.brightness = float(
+                        decoded.get("brightness", 0.0)
+                    )  # don't like defaults here; I think, when notes, then this should always be there
+                    self.rms = float(
+                        decoded.get("rms", -100.0)
+                    )  # don't like defaults here; I think, when notes, then this should always be there
                     self.notes_updated = True
 
         except (BlockingIOError, json.JSONDecodeError):
