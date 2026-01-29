@@ -33,8 +33,8 @@ BRIGHT_MIN = 0.0
 BRIGHT_MAX = 1.0
 
 # RMS in decibel
-RMS_MIN = -100.0  # Total silence / Noise floor limit
-RMS_MAX = 0.0     # Digital clipping point
+RMS_MIN = -180.0  # Total silence / Noise floor limit
+RMS_MAX = 0.0  # Digital clipping point
 
 _ALLOWED_KEYS = {"bpm", "notes", "brightness", "rms"}
 

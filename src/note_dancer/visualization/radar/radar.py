@@ -99,35 +99,25 @@ class InteractiveStaff(AudioVisualizationBase):
         self.ring_spacing = 25.0
         self.active_traces = []
 
-    def _calculate_rotation_physics(self):
-        """Translates current BPM into rotational constants."""
+    def _calculate_rotation_physics(self) -> None:
+        """
+        Translates current BPM into rotational constants and adjusts decay rate
+        so traces decay 10 degrees before the staff reaches them again.
+        """
         # Constants for 60FPS movement
         beats_per_rotation = 16
-        # frames = (seconds_per_beat * beats_per_rotation) * fps
         total_frames = ((60.0 / self.bpm) * beats_per_rotation) * 60.0
 
         self.rotation_speed = 360.0 / total_frames
-        # Decay ensures traces last exactly one full loop (360 degrees)
-        self.decay_rate = 255.0 / (360.0 / self.rotation_speed)
+        # Adjust decay rate to account for 10-degree early decay
+        self.decay_rate = 255.0 / ((360.0 - 10.0) / self.rotation_speed)
 
     def update(self) -> None:
         """Main update loop: handles audio events and physics."""
-        # 1. Get raw audio events from the clean Base Class
         new_events = self.process_audio_frame()
-
-        # 2. Update Subclass-specific Physics
         self._calculate_rotation_physics()
+        self._update_visual_physics()
 
-        # Beat Pulse Logic (Moved from Base)
-        if self.receiver.beat_detected and self.beat_pulse_enabled.value:
-            self.beat_boost = 1.0
-
-        # Decay the boost over time
-        self.beat_boost *= 0.85
-        if self.beat_boost < 0.01:
-            self.beat_boost = 0
-
-        # 3. Create new visual traces
         for note in new_events:
             self.active_traces.append(
                 NoteTrace(
@@ -141,12 +131,18 @@ class InteractiveStaff(AudioVisualizationBase):
                 )
             )
 
-        # 4. Update Scanning Angle & Traces
+        self.active_traces = [t for t in self.active_traces if (t.update() or t.life > 0)]
+
+    def _update_visual_physics(self) -> None:
+        """Handles the movement and beat-pulsing logic."""
+        # Update Angle
         self.scanning_angle = (self.scanning_angle + self.rotation_speed) % 360
 
-        for t in self.active_traces:
-            t.update()
-        self.active_traces = [t for t in self.active_traces if t.life > 0]
+        # Handle Beat Pulse
+        if self.receiver.beat_detected and self.beat_pulse_enabled.value:
+            self.beat_boost = 1.0
+
+        self.beat_boost = max(0, self.beat_boost * 0.85)
 
     def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Renders the Radar, Rings, and Traces."""
