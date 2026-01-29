@@ -31,6 +31,11 @@ dev = ["pytest", "ruff", "mypy"]
 audio-engine = "note_dancer.engine.main:run_engine"
 viz-radar = "note_dancer.visualization.radar.radar:main"
 
+audio-engine-v2 = "note_dancer.engine_v2.main:run_engine"
+viz-cli = "note_dancer.visualization_v2.cli.cli:run"
+viz-simple = "note_dancer.visualization_v2.dashboard.dashboard:run"
+viz-radar-v2 = "note_dancer.visualization_v2.radar.radar:run"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 

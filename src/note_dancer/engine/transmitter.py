@@ -1,7 +1,8 @@
-import socket
 import json
+import socket
+
 from note_dancer.config import UDP_IP, UDP_PORT
-from note_dancer.protocol import validate_message_or_raise
+from note_dancer.engine.protocol import validate_message_or_raise
 
 
 class NetworkTransmitter:
