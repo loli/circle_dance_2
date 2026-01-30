@@ -2,10 +2,11 @@ import collections
 
 import pygame
 
-from note_dancer.visualization_v2.base.hud import HUD, NumericParameter
+from note_dancer.visualization_v2.base.hud import HUD
 from note_dancer.visualization_v2.base.parameters import (
-    ADRenderParameter,
     ChromaSensitivityParameter,
+    EngineParameter,
+    Envelope,
     FluxImpactParameter,
     SpectrumGainParameter,
 )
@@ -28,16 +29,20 @@ class AudioVisualizationBase:
 
         # --- 2. Per-Band Physics (Attack & Decay) ---
         # LOWS: Usually slow decay for "weight"
-        self.low_atk = self.hud.register(NumericParameter("Low Atk", 0.8, 0.01, 1.0, 0.05, category="physics"))
-        self.low_dcy = self.hud.register(ADRenderParameter("Low Dcy", 0.1, 0.01, 1.0, 0.02, category="physics"))
+        # Create individual parameters (they get their own keys/sockets)
+        self.low_atk = EngineParameter("Low Atk", 0.85, 0.01, 1.0, 0.05, category="hidden")
+        self.low_dcy = EngineParameter("Low Dcy", 0.05, 0.01, 1.0, 0.01, category="hidden")
+        self.hud.register(Envelope("Low", self.low_atk, self.low_dcy, category="physics"))  # Group them for the HUD
 
         # MIDS: Balanced
-        self.mid_atk = self.hud.register(NumericParameter("Mid Atk", 0.6, 0.01, 1.0, 0.05, category="physics"))
-        self.mid_dcy = self.hud.register(ADRenderParameter("Mid Dcy", 0.2, 0.01, 1.0, 0.02, category="physics"))
+        self.mid_atk = EngineParameter("Mid Atk", 0.6, 0.01, 1.0, 0.05, category="hidden")
+        self.mid_dcy = EngineParameter("Mid Dcy", 0.2, 0.01, 1.0, 0.02, category="hidden")
+        self.hud.register(Envelope("Mid", self.mid_atk, self.mid_dcy, category="physics"))  # Group them for the HUD
 
         # HIGHS: Fast attack/decay for "snap"
-        self.hi_atk = self.hud.register(NumericParameter("Hi Atk", 0.9, 0.01, 1.0, 0.05, category="physics"))
-        self.hi_dcy = self.hud.register(ADRenderParameter("Hi Dcy", 0.4, 0.01, 1.0, 0.02, category="physics"))
+        self.high_atk = EngineParameter("Hi Atk", 0.9, 0.01, 1.0, 0.05, category="hidden")
+        self.high_dcy = EngineParameter("Hi Dcy", 0.4, 0.01, 1.0, 0.02, category="hidden")
+        self.hud.register(Envelope("Hi", self.high_atk, self.high_dcy, category="physics"))  # Group them for the HUD
 
         self.note_sens = self.hud.register(
             ChromaSensitivityParameter("Note Sens", 0.7, 0.1, 0.95, 0.05, category="global")
@@ -103,7 +108,7 @@ class AudioVisualizationBase:
         # Smooth each band using its specific HUD sliders
         self.smooth_low = lerp_band(self.smooth_low, packet["low"], self.low_atk, self.low_dcy)
         self.smooth_mid = lerp_band(self.smooth_mid, packet["mid"], self.mid_atk, self.mid_dcy)
-        self.smooth_high = lerp_band(self.smooth_high, packet["high"], self.hi_atk, self.hi_dcy)
+        self.smooth_high = lerp_band(self.smooth_high, packet["high"], self.high_atk, self.high_dcy)
 
         # --- 4. Event Assembly ---
         peak_note = max(self.notes) if any(self.notes) else 1.0

@@ -20,5 +20,6 @@ sleep 1
 #uv run receiver-v2
 #uv run viz-simple
 uv run viz-radar-v2
+#uv run viz-monolith
 
 # cleanup will run via trap

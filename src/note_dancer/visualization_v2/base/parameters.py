@@ -1,34 +1,12 @@
-import json
-import socket
+"""Specific parameter that come with built-in visualizations."""
 
 import pygame
 
 from note_dancer.visualization_v2.base.hud import NumericParameter
+from note_dancer.visualization_v2.base.parameters_base import EngineParameter, ParameterContainer
 
 
-class EngineParameter(NumericParameter):
-    """Extends your NumericParameter to send updates back to the Audio Engine."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.cmd_addr = ("127.0.0.1", 5006)
-
-    def handle(self, key: int) -> bool:
-        changed = super().handle(key)
-        if changed:
-            # Automatic mapping: "Low Gain" -> "low_gain"
-            engine_key = self.name.lower().replace(" ", "_")
-
-            # Manual override for specific naming differences
-            if engine_key == "flux_thr":
-                engine_key = "flux_sens"
-
-            msg = json.dumps({engine_key: float(self.value)})
-            self.cmd_sock.sendto(msg.encode(), self.cmd_addr)
-        return changed
-
-
+# Parameters with built-in visualizations
 class FluxImpactParameter(EngineParameter):
     """Visualizes the Spectral Flux (Transients) against a threshold."""
 
@@ -98,37 +76,45 @@ class SpectrumGainParameter(EngineParameter):
             pygame.draw.rect(surf, (255, 255, 255), (w - 5, 0, 5, h))
 
 
-class ADRenderParameter(NumericParameter):
-    """
-    Visualizes the 'weight' of the animation.
-    Automatically switches between Low/Mid/High based on its name.
-    """
+# Containers of parameters for grouped displaying
+class Envelope(ParameterContainer):
+    def __init__(self, name: str, atk: EngineParameter, dcy: EngineParameter, category: str = "physics"):
+        super().__init__(name, category=category)
+        self.atk = atk
+        self.dcy = dcy
 
-    def draw_visual(self, surf: pygame.Surface, data: dict) -> None:
+    def handle(self, key: int) -> bool:
+        """Pass the key to both children; return True if either changed."""
+        # We use a bitwise OR here so both have a chance to process the key
+        return self.atk.handle(key) | self.dcy.handle(key)
+
+    def __str__(self) -> str:
+        """Consolidated key-map and value string."""
+        k1, k2 = self.atk.keys
+        k3, k4 = self.dcy.keys
+        # Shortening key names for space: [T/G|U/J]
+        k_str = (
+            f"[{pygame.key.name(k1).upper()}/{pygame.key.name(k2).upper()}|"
+            f"{pygame.key.name(k3).upper()}/{pygame.key.name(k4).upper()}]"
+        )
+        return f"{k_str:<12} {self.name}: A{self.atk.value:.2f} D{self.dcy.value:.2f}"
+
+    def draw_visual(self, surf: pygame.Surface, data: dict):
+        """The combined 'Needle + Bar' visualization."""
         w, h = surf.get_size()
+        key = self.name.lower()
 
-        # 1. Determine which band we are tracking
-        # If the parameter name contains "Mid" or "High", use those keys
-        name_lower = self.name.lower()
-        key_suffix = "mid" if "mid" in name_lower else "high" if "high" in name_lower else "low"
-
-        smooth_val = data.get(key_suffix, 0.0)
-        raw_val = data.get(f"raw_{key_suffix}", 0.0)
-
-        # Color based on band (matching your Dashboard colors)
-        bar_color = (255, 50, 50) if key_suffix == "low" else (50, 255, 50) if key_suffix == "mid" else (50, 100, 255)
-        # De-saturate the bar color slightly for the "trail" look
-        trail_color = [max(0, c - 100) for c in bar_color]
+        # Get physics data from engine state
+        smooth_val = data.get(key, 0.0)
+        raw_val = data.get(f"raw_{key}", 0.0)
 
         # Draw Background
         surf.fill((20, 20, 25))
 
-        # 2. Draw the Smoothed 'Decay' Bar
-        trail_w = int(w * max(0, min(1.0, smooth_val)))
-        if trail_w > 0:
-            pygame.draw.rect(surf, trail_color, (0, 0, trail_w, h))
+        # 1. The 'Decay' Body (Colored Bar)
+        color = (255, 50, 50) if key == "low" else (50, 255, 50) if key == "mid" else (50, 100, 255)
+        pygame.draw.rect(surf, color, (0, 0, int(w * smooth_val), h))
 
-        # 3. Draw the Raw 'Attack' Spark
-        hit_x = int(w * max(0, min(1.0, raw_val)))
-        if hit_x > 0:
-            pygame.draw.rect(surf, (255, 255, 255), (hit_x - 1, 0, 3, h))
+        # 2. The 'Attack' Spark (White Needle)
+        hit_x = int(w * raw_val)
+        pygame.draw.line(surf, (255, 255, 255), (hit_x, 0), (hit_x, h), 2)

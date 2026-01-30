@@ -14,13 +14,32 @@ class RadarVisualizer(AudioVisualizationBase):
         self.width, self.height = width, height
         self.center = (width // 2, height // 2)
 
-        # --- 1. HUD Scene Controls (Top-Left) ---
+        # --- Override Engine Defaults for this specific Viz ---
+        self.low_gain.value = 5.0
+        self.low_atk.value = 0.85
+        self.low_dcy.value = 0.10
+
+        self.mid_gain.value = 12.0
+        self.mid_atk.value = 0.60
+        self.mid_dcy.value = 0.20
+
+        self.high_gain.value = 26.0
+        self.high_atk.value = 0.75
+        self.high_dcy.value = 0.26
+
+        self.flux_thr.value = 6.30  # Higher threshold for cleaner snaps
+        self.note_sens.value = 0.95  # Only very high (relative) note energies result in notes appearing
+
+        # --- Scene Controls ---
         self.show_rings = self.hud.register(BooleanParameter("Show Rings", True, category="local"))
-        self.max_node_size = self.hud.register(NumericParameter("Node Size", 60.0, 5.0, 150.0, 5.0, category="local"))
+        self.enable_flash = self.hud.register(BooleanParameter("Flash Base", False, category="local"))
+        self.max_node_size = self.hud.register(NumericParameter("Node Size", 20.0, 5.0, 150.0, 5.0, category="local"))
+        self.lag_comp = self.hud.register(NumericParameter("Lag Comp", 2.0, -30.0, 30.0, 1.0, category="local"))
+
+        # --- Hidden Parameters (can be made visible if deemed required) ---
         self.inner_radius = self.hud.register(
-            NumericParameter("Inner Rad", 150.0, 50.0, 400.0, 10.0, category="local")
+            NumericParameter("Inner Rad", 150.0, 50.0, 400.0, 10.0, category="hidden")
         )
-        self.lag_comp = self.hud.register(NumericParameter("Lag Comp", 0.0, -30.0, 30.0, 1.0, category="local"))
 
         # --- 2. State ---
         self.scanning_angle = 0.0
@@ -42,9 +61,12 @@ class RadarVisualizer(AudioVisualizationBase):
         # Decay rate ensures notes disappear just before the radar hits them again
         decay_rate = 255.0 / (360.0 / max(0.01, degrees_per_frame))
 
-        # 3. Background: Flash on Impact (Flux Threshold)
-        bg_flash = 25 if events["impact"] else 0
-        screen.fill((10 + bg_flash, 10 + bg_flash, 18 + bg_flash))
+        # 3. Background: Fill and optional Flash (on Impact, flux threshold crossing)
+        # Base color is always there to "clear" the previous frame
+        base_color = 10
+        flash_amt = 25 if (self.enable_flash.value and events["impact"]) else 0
+        total_v = base_color + flash_amt
+        screen.fill((total_v, total_v, total_v + 8))  # +8 gives it that slight "Radar Blue" tint
 
         # 4. Spawn New Note Traces
         for note_idx in events["active_notes"]:
