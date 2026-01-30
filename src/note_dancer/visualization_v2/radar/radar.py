@@ -31,6 +31,9 @@ class RadarVisualizer(AudioVisualizationBase):
         self.note_sens.value = 0.95  # Only very high (relative) note energies result in notes appearing
 
         # --- Scene Controls ---
+        self.note_style = self.hud.register(
+            NumericParameter("Note Style", 0, 0, 7, 1, category="local")  # 0: Orb, 1: Beam, 2: Block, 3: Spark
+        )
         self.show_rings = self.hud.register(BooleanParameter("Show Rings", True, category="local"))
         self.enable_flash = self.hud.register(BooleanParameter("Flash Base", False, category="local"))
         self.half_rotation_speed = self.hud.register(BooleanParameter("Half Rotation Speed", False, category="local"))
@@ -100,7 +103,7 @@ class RadarVisualizer(AudioVisualizationBase):
         # 6. Update and Draw Particles
         self.active_traces = [t for t in self.active_traces if t.update()]
         for t in self.active_traces:
-            t.draw(screen, self.center, events["low"], self.lag_comp.value)
+            t.draw(screen, self.center, events["low"], self.lag_comp.value, self.note_style.value)
 
         # 7. Radar Sweep Line
         rad = math.radians(self.scanning_angle - 90)

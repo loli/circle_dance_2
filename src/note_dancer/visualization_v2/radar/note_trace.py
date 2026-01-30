@@ -22,8 +22,7 @@ class NoteTrace:
         self.life -= self.decay_rate
         return self.life > 0
 
-    def draw(self, surface, center, low_boost, lag_comp):
-        # Apply the 'Duck' based on Smoothed Lows
+    def draw(self, surface, center, low_boost, lag_comp, style_idx):
         duck_factor = low_boost * 30.0
         visual_angle = self.angle + lag_comp
         r_pos = self.inner_r + (self.note_index * self.spacing) - duck_factor
@@ -35,9 +34,154 @@ class NoteTrace:
         alpha = max(0, min(255, int(self.life)))
         size = int(2 + (self.energy * self.max_size))
 
-        # Draw Glow
+        match int(style_idx):
+            case 0:
+                self._draw_glowing_orb(surface, x, y, size, alpha)
+            case 1:
+                self._draw_hot_orb(surface, x, y, size, alpha)
+            case 2:
+                self._draw_diamond(surface, x, y, size, visual_angle, alpha)
+            case 3:
+                self._draw_trailing_arc(surface, size, center, rad, r_pos, alpha)
+            case 4:
+                self._draw_spiky_bloom(surface, x, y, size, alpha)
+            case 5:
+                self._draw_segmented_arc(surface, x, y, size, visual_angle, alpha)
+            case 6:
+                self._draw_data_spark(surface, x, y, alpha)
+            case 7:
+                self._draw_sober_node(surface, x, y, size, alpha, low_boost)
+            case _:
+                self._draw_glowing_orb(surface, x, y, size, alpha)
+
+    def _draw_glowing_orb(self, surface, x, y, size, alpha):
+        # Draw a glowing orb
         surf_dim = size * 4
         note_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
         pygame.draw.circle(note_surf, (*self.color, alpha // 8), (surf_dim // 2, surf_dim // 2), size * 2)
         pygame.draw.circle(note_surf, (*self.color, alpha), (surf_dim // 2, surf_dim // 2), size // 2)
+        surface.blit(note_surf, (x - surf_dim // 2, y - surf_dim // 2))
+
+    def _draw_radial_beam(self, surface, x, y, size, center, rad, r_pos, alpha):
+        # Draw a line from the note position pointing inward
+        inner_x = center[0] + (r_pos - size * 2) * math.cos(rad)
+        inner_y = center[1] + (r_pos - size * 2) * math.sin(rad)
+        pygame.draw.line(surface, (*self.color, alpha), (x, y), (inner_x, inner_y), 3)
+
+    def _draw_segmented_arc(self, surface, x, y, size, visual_angle, alpha):
+        # Draws a small rectangle rotated to the tangent of the circle
+        rect_w, rect_h = size * 2, size // 2
+        rect_surf = pygame.Surface((rect_w, rect_h), pygame.SRCALPHA)
+        rect_surf.fill((*self.color, alpha))
+        # Rotate surface to match the radar angle
+        rotated_surf = pygame.transform.rotate(rect_surf, -visual_angle)
+        surface.blit(rotated_surf, rotated_surf.get_rect(center=(x, y)))
+
+    def _draw_data_spark(self, surface, x, y, alpha):
+        # Just a high-contrast 1px crosshair or pixel
+        pygame.draw.line(surface, (255, 255, 255, alpha), (x - 3, y), (x + 3, y), 1)
+        pygame.draw.line(surface, (255, 255, 255, alpha), (x, y - 3), (x, y + 3), 1)
+        pygame.draw.circle(surface, (*self.color, alpha), (int(x), int(y)), 2)
+
+    def _draw_hot_orb(self, surface, x, y, size, alpha):
+        # Hot core + soft glow
+        surf_dim = size * 6  # Increased for a softer falloff
+        note_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
+
+        # 1. Outer "Aura"
+        pygame.draw.circle(note_surf, (*self.color, alpha // 10), (surf_dim // 2, surf_dim // 2), size * 3)
+        # 2. Colored Body
+        pygame.draw.circle(note_surf, (*self.color, alpha // 2), (surf_dim // 2, surf_dim // 2), size)
+
+        surface.blit(note_surf, (x - surf_dim // 2, y - surf_dim // 2), special_flags=pygame.BLEND_ADD)
+
+        # 3. The "Spec" - a tiny white center that makes it pop
+        pygame.draw.circle(surface, (255, 255, 255, alpha), (int(x), int(y)), max(1, size // 3))
+
+    def _draw_diamond(self, surface, x, y, size, visual_angle, alpha):
+        s = size + 2
+        # Create 4 points for a diamond rotated by visual_angle
+        points = []
+        for i in range(4):
+            ang = math.radians(visual_angle + i * 90)
+            px = x + math.cos(ang) * s
+            py = y + math.sin(ang) * s
+            points.append((px, py))
+        pygame.draw.polygon(surface, (*self.color, alpha), points, 1)  # Wireframe looks techy
+
+    def _draw_trailing_arc(self, surface, size, center, rad, r_pos, alpha):
+        # Draw 3-4 smaller dots trailing behind the current angle
+        for i in range(1, 4):
+            trail_rad = rad - (i * 0.05)  # Shift angle back
+            tx = center[0] + r_pos * math.cos(trail_rad)
+            ty = center[1] + r_pos * math.sin(trail_rad)
+            pygame.draw.circle(surface, (*self.color, alpha // (i * 2)), (int(tx), int(ty)), size // (i + 1))
+
+    def _draw_spiky_bloom(self, surface, x, y, size, alpha):
+        """
+        Style 6: A high-energy lens flare / starburst effect.
+        Uses a hot core with four expanding spikes.
+        """
+        # 1. Draw the main glow core (similar to orb but tighter)
+        core_color = (*self.color, alpha)
+        pygame.draw.circle(surface, core_color, (int(x), int(y)), max(1, size // 2))
+
+        # 2. Draw the Spikes (Horizontal and Vertical)
+        # Spike length is proportional to energy
+        spike_len = size * 4
+        thickness = 1 if size < 10 else 2
+
+        # Horizontal Spike
+        pygame.draw.line(surface, core_color, (x - spike_len, y), (x + spike_len, y), thickness)
+        # Vertical Spike
+        pygame.draw.line(surface, core_color, (x, y - spike_len), (x, y + spike_len), thickness)
+
+        # 3. Add an 'Inner Spark' (White center)
+        # This makes the spike look like it's 'burning' through the screen
+        spark_size = max(1, size // 4)
+        pygame.draw.circle(surface, (255, 255, 255, alpha), (int(x), int(y)), spark_size)
+
+        # 4. Optional: Subtle diagonal cross for extra 'bloom'
+        # Only draw if energy is high to keep the screen clean
+        if self.energy > 0.7:
+            diag_len = spike_len * 0.6
+            pygame.draw.line(
+                surface, (*self.color, alpha // 2), (x - diag_len, y - diag_len), (x + diag_len, y + diag_len), 1
+            )
+            pygame.draw.line(
+                surface, (*self.color, alpha // 2), (x + diag_len, y - diag_len), (x - diag_len, y + diag_len), 1
+            )
+
+    def _draw_sober_node(self, surface, x, y, size, alpha, low_boost):
+        """
+        Style 1 (Hot/Sober Orb): High-fidelity node with sidechain 'Squash'
+        and color-shifting brightness logic.
+        """
+        # 1. Sidechain Scaling (The "Squash")
+        # Higher bass (low_boost) makes the node smaller/compressed
+        swell_size = int(size * (1.0 - low_boost * 0.4))
+        swell_size = max(1, swell_size)
+
+        # 2. Color Shift logic
+        # We simulate 'global_brightness' using the current audio energy
+        # This makes nodes 'whiten' slightly during intense moments
+        white_mix = low_boost * 60  # Subtle white injection
+        current_color = (
+            min(255, int(self.color[0] + white_mix)),
+            min(255, int(self.color[1] + white_mix)),
+            min(255, int(self.color[2] + white_mix)),
+        )
+
+        # 3. Rendering with specific sober layers
+        surf_dim = max(1, swell_size * 4)
+        note_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
+
+        # Large, very thin outer glow
+        pygame.draw.circle(note_surf, (*current_color, alpha // 8), (surf_dim // 2, surf_dim // 2), swell_size * 2)
+
+        # Solid core with precise scaling
+        pygame.draw.circle(
+            note_surf, (*current_color, alpha), (surf_dim // 2, surf_dim // 2), max(1, int(swell_size // 1.5))
+        )
+
         surface.blit(note_surf, (x - surf_dim // 2, y - surf_dim // 2))
