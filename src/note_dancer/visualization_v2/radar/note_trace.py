@@ -22,7 +22,36 @@ class NoteTrace:
         self.life -= self.decay_rate
         return self.life > 0
 
-    def draw(self, surface, center, low_boost, lag_comp, style_idx):
+    def _get_current_color(self, schema_idx, neon_base_color):
+        """Calculates the RGB color based on the selected schema."""
+
+        # SCHEMA 0: Rainbow (Classic)
+        if schema_idx == 0:
+            rgb = colorsys.hsv_to_rgb(self.note_index / 12.0, 0.8, 1.0)
+            return (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
+
+        # SCHEMA 1: Thermal (Red -> Orange -> White)
+        elif schema_idx == 1:
+            t = self.note_index / 11.0  # Normalize 0.0 to 1.0
+            if t < 0.5:  # Red to Orange
+                lerp = t * 2.0
+                return (255, int(160 * lerp), 0)
+            else:  # Orange to White
+                lerp = (t - 0.5) * 2.0
+                return (255, 160 + int(95 * lerp), int(255 * lerp))
+
+        # SCHEMA 2: Monochrome Neon
+        elif schema_idx == 2:
+            # Mix base color with white based on note height
+            mix = self.note_index / 12.0
+            r = int(neon_base_color[0] + (255 - neon_base_color[0]) * mix * 0.5)
+            g = int(neon_base_color[1] + (255 - neon_base_color[1]) * mix * 0.5)
+            b = int(neon_base_color[2] + (255 - neon_base_color[2]) * mix * 0.5)
+            return (r, g, b)
+
+        return (255, 255, 255)
+
+    def draw(self, surface, center, low_boost, lag_comp, style_idx, schema_idx, neon_color):
         duck_factor = low_boost * 30.0
         visual_angle = self.angle + lag_comp
         r_pos = self.inner_r + (self.note_index * self.spacing) - duck_factor
@@ -33,6 +62,8 @@ class NoteTrace:
 
         alpha = max(0, min(255, int(self.life)))
         size = int(2 + (self.energy * self.max_size))
+
+        self.color = self._get_current_color(schema_idx, neon_color)
 
         match int(style_idx):
             case 0:

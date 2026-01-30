@@ -7,6 +7,14 @@ from note_dancer.visualization_v2.base.audioviz import AudioVisualizationBase
 from note_dancer.visualization_v2.base.hud import BooleanParameter, NumericParameter
 from note_dancer.visualization_v2.radar.note_trace import NoteTrace
 
+NEON_PALETTE = [
+    (0, 255, 120),  # Phosphor Green
+    (0, 200, 255),  # Cyan
+    (255, 170, 0),  # Amber
+    (255, 0, 180),  # Magenta
+    (200, 200, 255),  # Ice White
+]
+
 
 class RadarVisualizer(AudioVisualizationBase):
     def __init__(self, width=900, height=900):
@@ -33,6 +41,12 @@ class RadarVisualizer(AudioVisualizationBase):
         # --- Scene Controls ---
         self.note_style = self.hud.register(
             NumericParameter("Note Style", 0, 0, 7, 1, category="local")  # 0: Orb, 1: Beam, 2: Block, 3: Spark
+        )
+        self.color_schema = self.hud.register(
+            NumericParameter("Color Schema", 0, 0, 2, 1, category="local")  # 0: Rainbow, 1: Thermal, 2: Neon
+        )
+        self.neon_hue_idx = self.hud.register(
+            NumericParameter("Neon Hue", 0, 0, len(NEON_PALETTE) - 1, 1, category="local")
         )
         self.show_rings = self.hud.register(BooleanParameter("Show Rings", True, category="local"))
         self.enable_flash = self.hud.register(BooleanParameter("Flash Base", False, category="local"))
@@ -102,8 +116,21 @@ class RadarVisualizer(AudioVisualizationBase):
 
         # 6. Update and Draw Particles
         self.active_traces = [t for t in self.active_traces if t.update()]
+
+        # Prepare color data for "Instant Switch"
+        current_neon_color = NEON_PALETTE[int(self.neon_hue_idx.value)]
+
         for t in self.active_traces:
-            t.draw(screen, self.center, events["low"], self.lag_comp.value, self.note_style.value)
+            # We now pass schema and neon color into the draw call
+            t.draw(
+                screen,
+                self.center,
+                events["low"],
+                self.lag_comp.value,
+                self.note_style.value,
+                self.color_schema.value,
+                current_neon_color,
+            )
 
         # 7. Radar Sweep Line
         rad = math.radians(self.scanning_angle - 90)
