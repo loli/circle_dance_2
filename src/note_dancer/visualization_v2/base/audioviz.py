@@ -5,9 +5,9 @@ import pygame
 from note_dancer.visualization_v2.base.hud import HUD
 from note_dancer.visualization_v2.base.parameters import (
     ChromaSensitivityParameter,
-    EngineParameter,
     Envelope,
     FluxImpactParameter,
+    NumericParameter,
     SpectrumGainParameter,
 )
 from note_dancer.visualization_v2.base.receiver import AudioReceiver
@@ -30,19 +30,19 @@ class AudioVisualizationBase:
         # --- 2. Per-Band Physics (Attack & Decay) ---
         # LOWS: Usually slow decay for "weight"
         # Create individual parameters (they get their own keys/sockets)
-        self.low_atk = EngineParameter("Low Atk", 0.85, 0.01, 1.0, 0.05, category="hidden")
-        self.low_dcy = EngineParameter("Low Dcy", 0.05, 0.01, 1.0, 0.01, category="hidden")
+        self.low_atk = NumericParameter("Low Atk", 0.85, 0.01, 1.0, 0.05, category="hidden")
+        self.low_dcy = NumericParameter("Low Dcy", 0.05, 0.01, 1.0, 0.01, category="hidden")
         self.hud.register(Envelope("Low", self.low_atk, self.low_dcy, category="physics"))  # Group them for the HUD
 
         # MIDS: Balanced
-        self.mid_atk = EngineParameter("Mid Atk", 0.6, 0.01, 1.0, 0.05, category="hidden")
-        self.mid_dcy = EngineParameter("Mid Dcy", 0.2, 0.01, 1.0, 0.02, category="hidden")
+        self.mid_atk = NumericParameter("Mid Atk", 0.6, 0.01, 1.0, 0.05, category="hidden")
+        self.mid_dcy = NumericParameter("Mid Dcy", 0.2, 0.01, 1.0, 0.02, category="hidden")
         self.hud.register(Envelope("Mid", self.mid_atk, self.mid_dcy, category="physics"))  # Group them for the HUD
 
         # HIGHS: Fast attack/decay for "snap"
-        self.high_atk = EngineParameter("Hi Atk", 0.9, 0.01, 1.0, 0.05, category="hidden")
-        self.high_dcy = EngineParameter("Hi Dcy", 0.4, 0.01, 1.0, 0.02, category="hidden")
-        self.hud.register(Envelope("Hi", self.high_atk, self.high_dcy, category="physics"))  # Group them for the HUD
+        self.high_atk = NumericParameter("High Atk", 0.9, 0.01, 1.0, 0.05, category="hidden")
+        self.high_dcy = NumericParameter("High Dcy", 0.4, 0.01, 1.0, 0.02, category="hidden")
+        self.hud.register(Envelope("High", self.high_atk, self.high_dcy, category="physics"))  # Group them for the HUD
 
         self.note_sens = self.hud.register(
             ChromaSensitivityParameter("Note Sens", 0.7, 0.1, 0.95, 0.05, category="global")

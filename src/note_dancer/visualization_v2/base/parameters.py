@@ -78,43 +78,44 @@ class SpectrumGainParameter(EngineParameter):
 
 # Containers of parameters for grouped displaying
 class Envelope(ParameterContainer):
-    def __init__(self, name: str, atk: EngineParameter, dcy: EngineParameter, category: str = "physics"):
-        super().__init__(name, category=category)
+    """
+    A strictly coupled container for Attack and Decay physics.
+    It manages two internal NumericParameters and shares a unified visual.
+    """
+
+    def __init__(self, name: str, atk: NumericParameter, dcy: NumericParameter, category: str = "physics"):
+        # Pass the parameters up to the base class as a list
+        super().__init__(name, [atk, dcy], category=category)
+
+        # Keep named references for internal logic
         self.atk = atk
         self.dcy = dcy
 
-    def handle(self, key: int) -> bool:
-        """Pass the key to both children; return True if either changed."""
-        # We use a bitwise OR here so both have a chance to process the key
-        return self.atk.handle(key) | self.dcy.handle(key)
-
-    def __str__(self) -> str:
-        """Consolidated key-map and value string."""
-        k1, k2 = self.atk.keys
-        k3, k4 = self.dcy.keys
-        # Shortening key names for space: [T/G|U/J]
-        k_str = (
-            f"[{pygame.key.name(k1).upper()}/{pygame.key.name(k2).upper()}|"
-            f"{pygame.key.name(k3).upper()}/{pygame.key.name(k4).upper()}]"
-        )
-        return f"{k_str:<12} {self.name}: A{self.atk.value:.2f} D{self.dcy.value:.2f}"
-
     def draw_visual(self, surf: pygame.Surface, data: dict):
-        """The combined 'Needle + Bar' visualization."""
+        """
+        Renders the unified high-density 'Needle + Bar' graph.
+        Shared by both Attack and Decay rows.
+        """
         w, h = surf.get_size()
-        key = self.name.lower()
 
-        # Get physics data from engine state
+        # Fetch live audio data (e.g., 'low' and 'raw_low')
+        key = self.name.lower()
         smooth_val = data.get(key, 0.0)
         raw_val = data.get(f"raw_{key}", 0.0)
 
         # Draw Background
         surf.fill((20, 20, 25))
 
-        # 1. The 'Decay' Body (Colored Bar)
+        # 1. The 'Decay' Body (Band-specific colors)
         color = (255, 50, 50) if key == "low" else (50, 255, 50) if key == "mid" else (50, 100, 255)
-        pygame.draw.rect(surf, color, (0, 0, int(w * smooth_val), h))
 
-        # 2. The 'Attack' Spark (White Needle)
-        hit_x = int(w * raw_val)
+        fill_w = int(w * max(0.0, min(1.0, smooth_val)))
+        if fill_w > 0:
+            pygame.draw.rect(surf, color, (0, 0, fill_w, h))
+
+        # 2. The 'Attack' Spark (White Needle for instant hits)
+        hit_x = int(w * max(0.0, min(1.0, raw_val)))
         pygame.draw.line(surf, (255, 255, 255), (hit_x, 0), (hit_x, h), 2)
+
+    def __str__(self) -> str:
+        return f"Envelope: {self.name}"

@@ -33,6 +33,7 @@ class RadarVisualizer(AudioVisualizationBase):
         # --- Scene Controls ---
         self.show_rings = self.hud.register(BooleanParameter("Show Rings", True, category="local"))
         self.enable_flash = self.hud.register(BooleanParameter("Flash Base", False, category="local"))
+        self.half_rotation_speed = self.hud.register(BooleanParameter("Half Rotation Speed", False, category="local"))
         self.max_node_size = self.hud.register(NumericParameter("Node Size", 20.0, 5.0, 150.0, 5.0, category="local"))
         self.lag_comp = self.hud.register(NumericParameter("Lag Comp", 2.0, -30.0, 30.0, 1.0, category="local"))
 
@@ -53,13 +54,16 @@ class RadarVisualizer(AudioVisualizationBase):
             return
 
         # 2. Rotational Physics (Synced to Smoothed BPM)
-        # 1 Rotation every 8 beats
+        # default: 1 Rotation every 8 beats
+        rotation_every_n_beats = 16 if self.half_rotation_speed.value else 8
         bps = events["bpm"] / 60.0
-        degrees_per_frame = (360.0 * bps) / (60.0 * 8)
+        degrees_per_frame = (360.0 * bps) / (60.0 * rotation_every_n_beats)
         self.scanning_angle = (self.scanning_angle + degrees_per_frame) % 360
 
         # Decay rate ensures notes disappear just before the radar hits them again
-        decay_rate = 255.0 / (360.0 / max(0.01, degrees_per_frame))
+        clearance_gap = 15.0  # degree
+        effective_degrees = 360.0 - clearance_gap
+        decay_rate = 255.0 / (effective_degrees / max(0.01, degrees_per_frame))
 
         # 3. Background: Fill and optional Flash (on Impact, flux threshold crossing)
         # Base color is always there to "clear" the previous frame
