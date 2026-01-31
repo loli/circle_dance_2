@@ -1,4 +1,5 @@
 import collections
+import sys
 
 import pygame
 
@@ -14,10 +15,19 @@ from note_dancer.visualization_v2.base.receiver import AudioReceiver
 
 
 class AudioVisualizationBase:
-    def __init__(self) -> None:
+    def __init__(self, width=900, height=900) -> None:
+        # --- Screen Management ---
+        self.width = width
+        self.height = height
+        self.is_fullscreen = False
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        self.center = (self.width // 2, self.height // 2)
+
+        # --- Engine Core ---
         self.receiver = AudioReceiver()
         self.receiver.bind()
         self.hud = HUD()
+        self.clock = pygame.time.Clock()
 
         # --- 1. Audio Parameters (Gains & Thresholds) ---
         self.flux_thr = self.hud.register(FluxImpactParameter("Flux Thr", 1.0, 0.0, 10.0, 0.1, category="global"))
@@ -63,6 +73,56 @@ class AudioVisualizationBase:
         self.smooth_mid = 0.0
         self.smooth_high = 0.0
         self.smooth_bpm = 120.0
+
+    def toggle_fullscreen(self):
+        self.is_fullscreen = not self.is_fullscreen
+        if self.is_fullscreen:
+            # Switch to current desktop resolution
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+
+        # Update center point for the subclasses
+        new_w, new_h = self.screen.get_size()
+        self.center = (new_w // 2, new_h // 2)
+
+    def handle_base_events(self):
+        """Handle system-level events like resizing and quitting."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+
+            if event.type == pygame.VIDEORESIZE and not self.is_fullscreen:
+                self.width, self.height = event.w, event.h
+                self.center = (self.width // 2, self.height // 2)
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_f:  # 'F' for Fullscreen
+                    self.toggle_fullscreen()
+                if event.key == pygame.K_ESCAPE:  # 'ESC' to quit
+                    return False
+                # Pass other keys to the HUD
+                self.handle_keys(event.key)
+        return True
+
+    def run(self, title="Note Dancer Visualization"):
+        """Centralized execution loop."""
+        pygame.init()
+        pygame.display.set_caption(title)
+        font = pygame.font.SysFont("monospace", 16, bold=True)
+
+        running = True
+        while running:
+            running = self.handle_base_events()
+
+            # Subclasses will use self.screen and self.center inside here
+            self.draw(self.screen, font)
+
+            pygame.display.flip()
+            self.clock.tick(60)
+
+        pygame.quit()
+        sys.exit()
 
     def _hedge_bpm(self, raw_bpm):
         """Force BPM into 90-180 range (The Hedging you requested)."""
@@ -153,3 +213,8 @@ class AudioVisualizationBase:
 
     def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         raise NotImplementedError("Subclasses must implement render_visualization")
+
+    @property
+    def scale_factor(self) -> float:
+        """Returns the ratio of current height vs the design height (900px)."""
+        return self.screen.get_height() / 900.0

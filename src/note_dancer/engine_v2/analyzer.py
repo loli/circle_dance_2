@@ -84,7 +84,7 @@ class AudioAnalyzer:
             results["flux"] = 0.0
         self.prev_percussive_mag = current_percussive
 
-        # Clean Chroma
+        # Compute clean Chroma (frame normalized)
         chroma = librosa.feature.chroma_stft(S=harmonic_mag[:, -1:], sr=RATE, n_chroma=12, n_fft=self.n_fft)
         results["notes"] = chroma.flatten().tolist()
 
