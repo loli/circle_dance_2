@@ -1,3 +1,5 @@
+import json
+import os
 import time
 
 import pygame
@@ -20,6 +22,9 @@ class HUD:
         self.help_timer = time.time() + 3600  # Long timer for dev
         self.msg = ""
         self.msg_timer = 0
+        self.preset_slots: dict[str, None | dict] = {str(i): None for i in range(10)}  # Keys '0' through '9'
+        self.preset_file = "user_presets.json"
+        self.preset_slots = self._load_from_disk()
 
     def register(self, p):
         self.registry.append(p)
@@ -46,6 +51,19 @@ class HUD:
         # Only process further input if HUD is visible
         if not self.show_help:
             return
+
+        # Preset Logic
+        mods = pygame.key.get_mods()
+        is_ctrl = mods & pygame.KMOD_CTRL
+
+        # Check for keys 0-9
+        if pygame.K_0 <= key <= pygame.K_9:
+            slot = pygame.key.name(key)
+            if is_ctrl:
+                self._save_preset(slot)
+            else:
+                self._load_preset(slot)
+            return  # Exit early so we don't trigger other HUD actions
 
         current_view = [p for p in self.params if p.category == self.active_category]
         if not current_view:
@@ -130,6 +148,91 @@ class HUD:
             bg.blit(font.render(prefix + str(p), True, text_color), (10, 40 + i * line_h))
         surface.blit(bg, pos)
 
+    def _save_preset(self, slot: str):
+        snapshot = {}
+        for p in self.registry:
+            if isinstance(p, ParameterContainer):
+                snapshot[p.name] = {sub.name: sub.value for sub in p.get_items()}
+            else:
+                snapshot[p.name] = p.value
+
+        self.preset_slots[slot] = snapshot
+        self._save_to_disk()
+
+        self._show_message(f"PRESET {slot} SAVED TO DISK")
+
+    def _load_preset(self, slot: str):
+        """Applies a saved snapshot to the current parameters."""
+        snapshot = self.preset_slots.get(slot)
+        if not snapshot:
+            return
+
+        for p in self.registry:
+            if isinstance(p, ParameterContainer) and p.name in snapshot:
+                container_data = snapshot[p.name]
+                for sub in p.get_items():
+                    if sub.name in container_data:
+                        sub.value = type(sub.value)(container_data[sub.name])
+            elif p.name in snapshot:
+                p.value = type(p.value)(snapshot[p.name])
+
+        self._show_message(f"PRESET {slot} LOADED")
+
+    def _show_message(self, text):
+        self.msg = text
+        self.msg_timer = time.time() + 2.0
+
+    def _save_to_disk(self):
+        """Writes the current preset_slots dictionary to a JSON file."""
+        try:
+            with open(self.preset_file, "w") as f:
+                json.dump(self.preset_slots, f, indent=4)
+        except Exception as e:
+            print(f"Error saving presets: {e}")
+
+    def _load_from_disk(self):
+        """Loads presets from disk or returns empty slots if file doesn't exist."""
+        if os.path.exists(self.preset_file):
+            try:
+                with open(self.preset_file, "r") as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Error loading presets: {e}")
+
+        # Return empty slots if file is missing/invalid
+        return {str(i): None for i in range(10)}
+
+    def _draw_presets(self, surface, font):
+        # Position: Bottom Left
+        start_x, start_y = 15, surface.get_height() - 40
+        size = 25
+        spacing = 8
+
+        for i in range(10):
+            slot_key = str((i + 1) % 10)  # Order: 1, 2, ... 9, 0
+            is_occupied = self.preset_slots[slot_key] is not None
+
+            rect = pygame.Rect(start_x + i * (size + spacing), start_y, size, size)
+
+            # Draw Box
+            if is_occupied:
+                # Filled box for saved presets (Sober Green/Cyan)
+                pygame.draw.rect(surface, (0, 200, 180, 180), rect)
+            else:
+                # Outline for empty slots
+                pygame.draw.rect(surface, (100, 100, 100, 150), rect, 1)
+
+            # Draw Number
+            num_img = font.render(slot_key, True, (255, 255, 255))
+            # Center the number in the box
+            text_rect = num_img.get_rect(center=rect.center)
+            surface.blit(num_img, text_rect)
+
+        # Draw temporary status message (e.g., "PRESET 1 SAVED")
+        if time.time() < self.msg_timer:
+            msg_img = font.render(self.msg, True, (255, 255, 0))
+            surface.blit(msg_img, (start_x, start_y - 30))
+
     def draw_scene_controls(self, surface, font):
         local_params = [p for p in self.params if p.category == "local"]
         if local_params:
@@ -165,3 +268,4 @@ class HUD:
         self.draw_scene_controls(surface, font)
         self.draw_physics_controls(surface, font, audio_state)
         self.draw_audio_controls(surface, font, audio_state)
+        self._draw_presets(surface, font)

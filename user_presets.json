@@ -1,0 +1,264 @@
+{
+    "0": null,
+    "1": {
+        "norm_mode": 2,
+        "Flux Thr": 6.3,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.96,
+        "Note Style": 0,
+        "Color Schema": 0,
+        "Neon Hue": 0,
+        "Show Rings": true,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 20.0,
+        "Lag Comp": 2.0,
+        "Inner Rad": 150.0
+    },
+    "2": {
+        "norm_mode": 0,
+        "Flux Thr": 6.699999999999998,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.7999999999999998,
+        "Note Style": 0,
+        "Color Schema": 1,
+        "Neon Hue": 0,
+        "Show Rings": true,
+        "Flash Base": true,
+        "Half Rotation Speed": false,
+        "Node Size": 120.0,
+        "Lag Comp": 0.0,
+        "Inner Rad": 150.0
+    },
+    "3": {
+        "norm_mode": 1,
+        "Flux Thr": 6.699999999999998,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.98,
+        "Note Style": 2,
+        "Color Schema": 1,
+        "Neon Hue": 0,
+        "Show Rings": false,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 15.0,
+        "Lag Comp": 0.0,
+        "Inner Rad": 150.0
+    },
+    "4": {
+        "norm_mode": 0,
+        "Flux Thr": 6.699999999999998,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.9199999999999999,
+        "Note Style": 2,
+        "Color Schema": 1,
+        "Neon Hue": 0,
+        "Show Rings": false,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 20.0,
+        "Lag Comp": 0.0,
+        "Inner Rad": 150.0
+    },
+    "5": {
+        "norm_mode": 2,
+        "Flux Thr": 6.699999999999998,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.8599999999999999,
+        "Note Style": 2,
+        "Color Schema": 1,
+        "Neon Hue": 0,
+        "Show Rings": false,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 20.0,
+        "Lag Comp": 0.0,
+        "Inner Rad": 150.0
+    },
+    "6": {
+        "norm_mode": 2,
+        "Flux Thr": 7.599999999999995,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.8599999999999999,
+        "Note Style": 1,
+        "Color Schema": 1,
+        "Neon Hue": 0,
+        "Show Rings": false,
+        "Flash Base": true,
+        "Half Rotation Speed": false,
+        "Node Size": 20.0,
+        "Lag Comp": 0.0,
+        "Inner Rad": 150.0
+    },
+    "7": {
+        "norm_mode": 0,
+        "Flux Thr": 7.599999999999995,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.8599999999999999,
+        "Note Style": 3,
+        "Color Schema": 0,
+        "Neon Hue": 0,
+        "Show Rings": true,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 115.0,
+        "Lag Comp": 1.0,
+        "Inner Rad": 150.0
+    },
+    "8": {
+        "norm_mode": 1,
+        "Flux Thr": 7.599999999999995,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.7999999999999999,
+            "Low Dcy": 0.08
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.8999999999999999,
+        "Note Style": 3,
+        "Color Schema": 0,
+        "Neon Hue": 0,
+        "Show Rings": false,
+        "Flash Base": false,
+        "Half Rotation Speed": false,
+        "Node Size": 25.0,
+        "Lag Comp": 1.0,
+        "Inner Rad": 150.0
+    },
+    "9": {
+        "norm_mode": 2,
+        "Flux Thr": 6.3,
+        "Low Gain": 0.8,
+        "Mid Gain": 0.8,
+        "High Gain": 0.8,
+        "Low": {
+            "Low Atk": 0.85,
+            "Low Dcy": 0.1
+        },
+        "Mid": {
+            "Mid Atk": 0.6,
+            "Mid Dcy": 0.2
+        },
+        "High": {
+            "High Atk": 0.75,
+            "High Dcy": 0.26
+        },
+        "Note Sens": 0.96,
+        "Note Style": 3,
+        "Color Schema": 2,
+        "Neon Hue": 5,
+        "Show Rings": true,
+        "Flash Base": true,
+        "Half Rotation Speed": false,
+        "Node Size": 35.0,
+        "Lag Comp": 2.0,
+        "Inner Rad": 150.0
+    }
+}

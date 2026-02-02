@@ -19,8 +19,10 @@ def run_engine():
             samples = stream.read()
             data = analyzer.process(samples)
             transmitter.send(data)
-    except Exception:
-        print("Error: Engine died.")
+    except KeyboardInterrupt:
+        print("Shutting down engine...")
+    except Exception as e:
+        raise e
     finally:
         stream.close()
 

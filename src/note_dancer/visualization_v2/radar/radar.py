@@ -7,11 +7,14 @@ from note_dancer.visualization_v2.base.hud import BooleanParameter, NumericParam
 from note_dancer.visualization_v2.radar.note_trace import NoteTrace
 
 NEON_PALETTE = [
-    (0, 255, 120),  # Phosphor Green
-    (0, 200, 255),  # Cyan
-    (255, 170, 0),  # Amber
     (255, 0, 180),  # Magenta
-    (200, 200, 255),  # Ice White
+    (255, 170, 0),  # Amber
+    (14, 255, 178),  # Electric Mint (Colder than Phosphor Green)
+    (0, 180, 255),  # Deep Azure (More saturated than standard Cyan)
+    (255, 230, 0),  # Radioactive Lemon (Piercing, better than Amber)
+    (180, 50, 255),  # Hyper-Violet (Deep, moody alternative to Magenta)
+    (255, 60, 110),  # Crimson Neon (A "hot" pink/red that cuts through black)
+    (220, 240, 255),  # Glacier Blue (A high-luma 'White' with a blue soul)
 ]
 
 
@@ -21,17 +24,17 @@ class RadarVisualizer(AudioVisualizationBase):
         super().__init__(width=width, height=height)
 
         # --- Radar Specific Defaults ---
-        self.low_gain.value = 5.0
+        self.low_gain.value = 0.8
         self.low_atk.value = 0.85
         self.low_dcy.value = 0.10
-        self.mid_gain.value = 12.0
+        self.mid_gain.value = 0.8
         self.mid_atk.value = 0.60
         self.mid_dcy.value = 0.20
-        self.high_gain.value = 26.0
+        self.high_gain.value = 0.8
         self.high_atk.value = 0.75
         self.high_dcy.value = 0.26
         self.flux_thr.value = 6.30
-        self.note_sens.value = 0.95
+        self.note_sens.value = 0.96
 
         # --- Scene Controls ---
         self.note_style = self.hud.register(NumericParameter("Note Style", 0, 0, 3, 1, category="local"))
@@ -89,7 +92,7 @@ class RadarVisualizer(AudioVisualizationBase):
                 NoteTrace(
                     note_idx,
                     self.scanning_angle,
-                    self.notes[note_idx],
+                    self.notes[note_idx],  # 'energy' here is now a perfect logarithmic 0.0 to 1.0
                     decay_rate,
                     scaled_inner_r,
                     scaled_spacing,

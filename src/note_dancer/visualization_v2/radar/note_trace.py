@@ -42,11 +42,20 @@ class NoteTrace:
 
         # SCHEMA 2: Monochrome Neon
         elif schema_idx == 2:
-            # Mix base color with white based on note height
+            # mix represents the 'heat' of the note (0.0 to 1.0)
             mix = self.note_index / 12.0
-            r = int(neon_base_color[0] + (255 - neon_base_color[0]) * mix * 0.5)
-            g = int(neon_base_color[1] + (255 - neon_base_color[1]) * mix * 0.5)
-            b = int(neon_base_color[2] + (255 - neon_base_color[2]) * mix * 0.5)
+
+            # Instead of white, we mix toward a 'glow' color (like the Glacier Blue)
+            glow_color = (220, 240, 255)
+
+            # We use a non-linear mix (power curve) so the 'pure' color
+            # stays dominant longer, and only the highest notes 'ignite'.
+            heat = mix**1.5
+
+            r = int(neon_base_color[0] + (glow_color[0] - neon_base_color[0]) * heat)
+            g = int(neon_base_color[1] + (glow_color[1] - neon_base_color[1]) * heat)
+            b = int(neon_base_color[2] + (glow_color[2] - neon_base_color[2]) * heat)
+
             return (r, g, b)
 
         return (255, 255, 255)
@@ -61,7 +70,10 @@ class NoteTrace:
         y = center[1] + r_pos * math.sin(rad)
 
         alpha = max(0, min(255, int(self.life)))
-        size = int(2 + (self.energy * self.max_size))
+        # size = int(2 + (self.energy * self.max_size))
+        size = int(
+            2 + (self.energy * self.energy * self.max_size)
+        )  # energy squared to ensure that small sizes are clearly distinct from large one
         # size = int(
         #    2 + (pow(self.energy, 2) * self.max_size)
         # )  # logarithmic scaleing from (frame-wide normalized) energy to size
@@ -74,7 +86,7 @@ class NoteTrace:
             case 1:
                 self._draw_trailing_arc(surface, size, center, rad, r_pos, alpha)
             case 2:
-                self._draw_segmented_arc(surface, x, y, size, visual_angle, alpha)
+                self._draw_segmented_arc(surface, x, y, self.max_size, visual_angle, alpha)
             case 3:
                 self._draw_sober_node(surface, x, y, size, alpha, low_boost)
             case _:
@@ -94,9 +106,9 @@ class NoteTrace:
         inner_y = center[1] + (r_pos - size * 2) * math.sin(rad)
         pygame.draw.line(surface, (*self.color, alpha), (x, y), (inner_x, inner_y), 3)
 
-    def _draw_segmented_arc(self, surface, x, y, size, visual_angle, alpha):
+    def _draw_segmented_arc(self, surface, x, y, max_size, visual_angle, alpha):
         # Draws a small rectangle rotated to the tangent of the circle
-        rect_w, rect_h = size * 2, size // 2
+        rect_w, rect_h = max_size * 2, max_size // 2
         rect_surf = pygame.Surface((rect_w, rect_h), pygame.SRCALPHA)
         rect_surf.fill((*self.color, alpha))
         # Rotate surface to match the radar angle

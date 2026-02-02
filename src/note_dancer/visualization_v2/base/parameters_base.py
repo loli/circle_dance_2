@@ -91,7 +91,14 @@ class EngineParameter(NumericParameter):
         if engine_key == "flux_thr":
             engine_key = "flux_sens"
 
-        msg = json.dumps({engine_key: float(self.value)})
+        # Manual mapping from int to name
+        if engine_key == "norm_mode":
+            mode_names = {0: "fixed", 1: "competitive", 2: "statistical"}
+            msg = json.dumps({engine_key: mode_names[int(self.value)]})
+            print(msg)
+        else:
+            msg = json.dumps({engine_key: float(self.value)})
+
         self.cmd_sock.sendto(msg.encode(), self.cmd_addr)
 
 

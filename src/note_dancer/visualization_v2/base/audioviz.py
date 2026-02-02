@@ -6,6 +6,7 @@ import pygame
 from note_dancer.visualization_v2.base.hud import HUD
 from note_dancer.visualization_v2.base.parameters import (
     ChromaSensitivityParameter,
+    EngineParameter,
     Envelope,
     FluxImpactParameter,
     NumericParameter,
@@ -30,12 +31,11 @@ class AudioVisualizationBase:
         self.clock = pygame.time.Clock()
 
         # --- 1. Audio Parameters (Gains & Thresholds) ---
+        self.flux_thr = self.hud.register(EngineParameter("norm_mode", 0, 0, 2, 1, category="global"))
         self.flux_thr = self.hud.register(FluxImpactParameter("Flux Thr", 1.0, 0.0, 10.0, 0.1, category="global"))
-        self.low_gain = self.hud.register(SpectrumGainParameter("Low Gain", 10.0, 0.0, 100.0, 1.0, category="global"))
-        self.mid_gain = self.hud.register(SpectrumGainParameter("Mid Gain", 10.0, 0.0, 100.0, 1.0, category="global"))
-        self.high_gain = self.hud.register(
-            SpectrumGainParameter("High Gain", 10.0, 0.0, 100.0, 1.0, category="global")
-        )
+        self.low_gain = self.hud.register(SpectrumGainParameter("Low Gain", 0.8, 0.1, 2.0, 0.1, category="global"))
+        self.mid_gain = self.hud.register(SpectrumGainParameter("Mid Gain", 0.8, 0.1, 2.0, 0.1, category="global"))
+        self.high_gain = self.hud.register(SpectrumGainParameter("High Gain", 0.8, 0.1, 2.0, 0.1, category="global"))
 
         # --- 2. Per-Band Physics (Attack & Decay) ---
         # LOWS: Usually slow decay for "weight"
@@ -55,7 +55,7 @@ class AudioVisualizationBase:
         self.hud.register(Envelope("High", self.high_atk, self.high_dcy, category="physics"))  # Group them for the HUD
 
         self.note_sens = self.hud.register(
-            ChromaSensitivityParameter("Note Sens", 0.7, 0.1, 0.95, 0.05, category="global")
+            ChromaSensitivityParameter("Note Sens", 0.9, 0.5, 0.98, 0.02, category="global")
         )
 
         # --- 3. State Management (Crucial for History & Smoothing) ---
@@ -200,7 +200,7 @@ class AudioVisualizationBase:
             "low": self.smooth_low,
             "mid": self.smooth_mid,
             "high": self.smooth_high,
-            # Raw Hits (Added mid and high here)
+            # Raw Hits
             "raw_low": self.data.get("low", 0.0),
             "raw_mid": self.data.get("mid", 0.0),
             "raw_high": self.data.get("high", 0.0),
