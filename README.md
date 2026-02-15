@@ -74,3 +74,21 @@ The visualization, in form of a note atack radar.
 - The Attack Filter (Temporal Delta): Instead of drawing the volume, we draw the change in volume. By subtracting the previous frame's energy from the current one, we isolate the "Attack" phase of a sound—the precise moment a string is plucked or a drum is hit. This prevents long, sustained bass notes from filling the screen with solid blobs of color.
 - Coordinate Transformation: The visualizer uses Polar Coordinates (r, θ). We convert the note's identity into a radius (r) and the playhead's position into an angle (θ), then translate those into Cartesian Coordinates (x, y) for the screen.
 - Decay Sync: The life of each note-head is mathematically tied to the rotation speed. This ensures that every "trace" vanishes exactly as the scanning arm completes a full circle, keeping the canvas clean.
+
+
+## Running with the Behringer External Soundcard
+
+- The soundcard runs with 48kHz by default. Adapt in `config.py` accordingly.
+- I can, currently, not access the soundcard directly as hardware device. But I can minimize the latency:
+    1. Use `pavucontrol` > Input Devices > Soundcard > 0dB gain
+    2. Run with `PULSE_LATENCY_MSEC=20 ./run_v2.sh`
+
+### Why 20ms?
+
+With a 48kHz rate and a 1024 chunk size, your script processes a "window" of audio every 21.33ms (1024/48000≈0.02133).
+
+- Alignment: It matches your chunk duration ( 21ms). If you set it much higher (e.g., 100ms), PulseAudio will hold onto 5 chunks worth of data before handing them to your script, causing a visible "lag" where the bars move after the kick drum has already finished.
+
+- Stability: If you set it too low (e.g., 5ms), the Behringer (which is an older USB 1.1 device) might struggle to keep up with the constant "interrupts," leading to Xruns (pops, clicks, or dropped samples) which will make your FFT analysis look "jittery."
+
+If you notice your visualization "stuttering" or see "Input Overflow" errors in your console, it means the 20ms buffer is too tight for your Ubuntu kernel's current workload. In that case, increase it to 42ms (exactly two chunks).
