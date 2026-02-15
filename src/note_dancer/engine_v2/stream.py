@@ -10,7 +10,7 @@ class AudioStream:
         self.p = pyaudio.PyAudio()
         self.stream = self.p.open(
             format=pyaudio.paFloat32,
-            channels=1,
+            channels=2,  # stereo, we average below
             rate=RATE,
             input=True,
             frames_per_buffer=CHUNK,
@@ -18,8 +18,10 @@ class AudioStream:
 
     def read(self) -> npt.NDArray[np.float32]:
         """Reads a chunk of audio and returns it as a normalized float32 array."""
-        data = self.stream.read(CHUNK, exception_on_overflow=False)
-        return np.frombuffer(data, dtype=np.float32)
+        raw_data = self.stream.read(CHUNK, exception_on_overflow=False)
+        audio_array = np.frombuffer(raw_data, dtype=np.float32)
+        mono_signal = (audio_array[0::2] + audio_array[1::2]) / 2.0
+        return mono_signal
 
     def close(self):
         self.stream.stop_stream()
