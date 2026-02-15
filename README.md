@@ -1,30 +1,8 @@
-Run detector.py. WHile it runs
-
-Even with the correct index, Ubuntu usually defaults a new recording stream to your Microphone. You need to manually flip the switch while the script is running:
-
-    Run the script above. You will likely see the Vol: [---] meter staying flat.
-
-    Open your terminal and type: pavucontrol (Install it via sudo apt install pavucontrol if you don't have it).
-
-    Go to the Recording tab.
-
-    Find your Python script in the list.
-
-    Click the button next to it (it probably says "Built-in Audio Analog Stereo").
-
-    Change it to "Monitor of Built-in Audio Analog Stereo" (or whatever your main output is called).
-
-Once you do this, the volume meter in your terminal should start jumping in sync with your music, and notes should begin to appear.
-
----
-
-DEVICE_INDEX = None for default, otherwise see find_monitor and try around. Until it appeas in pavucontrol UI.
-
----
-
 ## How-To
 
+### How to route input signal
 
+An input received from an internal or external soundcard can be mapped to your script via `pavucontrol`'s record tab. Take care to map the input itself, not the monitor for better performance.
 
 ### How to Route System Audio (The "Pavucontrol" Trick)
 
