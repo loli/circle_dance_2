@@ -5,6 +5,9 @@ import pygame
 
 
 class NoteTrace:
+    # Class-level caches shared by all instances
+    _glowing_orb_cache = {}
+
     def __init__(self, note_index, angle, energy, decay_rate, inner_r, spacing, max_size):
         self.note_index = note_index
         self.angle = angle
@@ -93,12 +96,46 @@ class NoteTrace:
                 self._draw_glowing_orb(surface, x, y, size, alpha)
 
     def _draw_glowing_orb(self, surface, x, y, size, alpha):
-        # Draw a glowing orb
-        surf_dim = size * 4
-        note_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
-        pygame.draw.circle(note_surf, (*self.color, alpha // 8), (surf_dim // 2, surf_dim // 2), size * 2)
-        pygame.draw.circle(note_surf, (*self.color, alpha), (surf_dim // 2, surf_dim // 2), size // 2)
-        surface.blit(note_surf, (x - surf_dim // 2, y - surf_dim // 2))
+        # 2. BRUTAL QUANTIZATION
+        # Floating point numbers are the enemy of caches.
+        # We round to the nearest 'step' to ensure we hit existing images.
+
+        if size > 100:
+            q_size = (int(size) // 10) * 10  # Very aggressive for big notes
+        else:
+            q_size = (int(size) // 4) * 4
+
+        # q_size = max(1, int(size))  # Integer pixel size
+        # q_alpha = max(0, (int(alpha) // 8) * 8)  # Groups of 8 (only ~32 possible alpha states)
+        q_alpha = max(0, (int(alpha) // 20) * 20)  # lower this number for smoother note deissapearing (with alpha)
+
+        # Quantize color to 16-step increments (reduces 16 million colors to a few hundred)
+        # q_color = ((self.color[0] // 16) * 16, (self.color[1] // 16) * 16, (self.color[2] // 16) * 16)
+        q_color = tuple((c // 50) * 50 for c in self.color)  # lower this for more different colors
+
+        # 3. CACHE LOOKUP
+        cache_key = (q_color, q_size, q_alpha)
+
+        if cache_key not in self._glowing_orb_cache:
+            print(f"DEBUG: Cache MISS - New Surface created. Total Cache Size: {len(self._glowing_orb_cache)}")
+
+            # 4. RENDER ONCE (The expensive part)
+            surf_dim = q_size * 4
+            note_surf = pygame.Surface((surf_dim, surf_dim), pygame.SRCALPHA)
+
+            # Draw the circles using the quantized color and alpha
+            pygame.draw.circle(note_surf, (*q_color, q_alpha // 8), (surf_dim // 2, surf_dim // 2), q_size * 2)
+            pygame.draw.circle(note_surf, (*q_color, q_alpha), (surf_dim // 2, surf_dim // 2), q_size // 2)
+
+            # 5. OPTIMIZE FOR GPU/CPU BLIT
+            # .convert_alpha() is what actually fixes the 4K/High-Res lag
+            self._glowing_orb_cache[cache_key] = note_surf.convert_alpha()
+        else:
+            print(f"DEBUG: Cache HIT!")
+
+        # 6. BLIT (The fast part)
+        cached_img = self._glowing_orb_cache[cache_key]
+        surface.blit(cached_img, (x - cached_img.get_width() // 2, y - cached_img.get_height() // 2))
 
     def _draw_radial_beam(self, surface, x, y, size, center, rad, r_pos, alpha):
         # Draw a line from the note position pointing inward
