@@ -202,7 +202,7 @@ class HUD:
         # Return empty slots if file is missing/invalid
         return {str(i): None for i in range(10)}
 
-    def _draw_presets(self, surface, font):
+    def draw_presets(self, surface, font):
         # Position: Bottom Left
         start_x, start_y = 15, surface.get_height() - 40
         size = 25
@@ -262,10 +262,21 @@ class HUD:
                 600,
             )
 
-    def draw(self, surface, font, audio_state):
+    def draw_fps(self, surface, font, fps):
+        # Draw it in the top right or bottom right
+        fps_text = f"FPS: {int(fps)}"
+        # Color logic: Red if it drops below 50 (indicating stutter)
+        fps_color = (0, 255, 0) if fps > 50 else (255, 50, 50)
+        fps_img = font.render(fps_text, True, fps_color)
+
+        # Position: Bottom right, above presets
+        surface.blit(fps_img, (surface.get_width() - 100, surface.get_height() - 40))
+
+    def draw(self, surface, font, audio_state, fps: float = 0):
         if not self.show_help:
             return  # Toggle 'H' to see menu
         self.draw_scene_controls(surface, font)
         self.draw_physics_controls(surface, font, audio_state)
         self.draw_audio_controls(surface, font, audio_state)
-        self._draw_presets(surface, font)
+        self.draw_presets(surface, font)
+        self.draw_fps(surface, font, fps)

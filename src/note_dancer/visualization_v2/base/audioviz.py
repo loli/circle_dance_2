@@ -145,7 +145,7 @@ class AudioVisualizationBase:
         Fetches raw data, hedges BPM, and applies per-band
         asymmetric smoothing (Attack/Decay).
         """
-        packet = self.receiver.wait_for_packet()
+        packet = self.receiver.get_latest()
         if not packet:
             return None
 
@@ -209,7 +209,7 @@ class AudioVisualizationBase:
         }
 
         # 3. Draw the HUD (passes context to all parameters)
-        self.hud.draw(screen, font, audio_state=context)
+        self.hud.draw(screen, font, audio_state=context, fps=self.clock.get_fps())
 
     def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         raise NotImplementedError("Subclasses must implement render_visualization")
