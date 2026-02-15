@@ -2,14 +2,14 @@ import numpy as np
 import numpy.typing as npt
 import pyaudio
 
-from note_dancer.config import CHUNK, RATE
+from note_dancer.config import CHUNK, FORMAT, RATE
 
 
 class AudioStream:
     def __init__(self):
         self.p = pyaudio.PyAudio()
         self.stream = self.p.open(
-            format=pyaudio.paFloat32,
+            format=FORMAT,
             channels=2,  # stereo, we average below
             rate=RATE,
             input=True,
