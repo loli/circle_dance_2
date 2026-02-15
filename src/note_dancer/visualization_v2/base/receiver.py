@@ -41,35 +41,6 @@ class AudioReceiver:
         except Exception as e:
             print(f"Error binding socket: {e}")
 
-    def wait_for_packet(self):
-        """
-        Blocks until a packet is received, unpacks it, and updates internal state.
-        Returns the data dictionary.
-        """
-        if not self._is_bound:
-            self.bind()
-
-        data, _ = self.sock.recvfrom(self.packet_size)
-
-        if len(data) != self.packet_size:
-            return None
-
-        unpacked = struct.unpack(self.packet_format, data)
-
-        # Map indices to keys
-        self.latest_data = {
-            "brightness": unpacked[0],
-            "flux": unpacked[1],
-            "low": unpacked[2],
-            "mid": unpacked[3],
-            "high": unpacked[4],
-            "bpm": unpacked[5],
-            "is_beat": unpacked[6],
-            "notes": list(unpacked[7:]),  # 12 chroma values
-        }
-
-        return self.latest_data
-
     def get_latest(self):
         """
         Non-blocking fetch. Clears the UDP buffer to get the MOST RECENT packet.
@@ -77,8 +48,6 @@ class AudioReceiver:
         """
         if not self._is_bound:
             self.bind()
-
-        new_data_received = False
 
         # We loop until the buffer is empty. This prevents 'visual lag'
         # caused by packets queuing up in the OS network stack.
@@ -98,7 +67,6 @@ class AudioReceiver:
                         "is_beat": unpacked[6] > 0.5,  # Convert float to bool
                         "notes": list(unpacked[7:]),
                     }
-                    new_data_received = True
             except socket.error as e:
                 # EAGAIN or EWOULDBLOCK means the buffer is finally empty
                 err = e.args[0]
