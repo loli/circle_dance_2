@@ -19,9 +19,9 @@ NEON_PALETTE = [
 
 
 class RadarVisualizer(AudioVisualizationBase):
-    def __init__(self, width=900, height=900):
+    def __init__(self):
         # Pass dimensions to Base for window creation
-        super().__init__(width=width, height=height)
+        super().__init__()
 
         # --- Radar Specific Defaults ---
         self.low_gain.value = 0.8

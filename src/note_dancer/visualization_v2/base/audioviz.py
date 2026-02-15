@@ -1,4 +1,5 @@
 import collections
+import os
 import sys
 
 import pygame
@@ -14,14 +15,20 @@ from note_dancer.visualization_v2.base.parameters import (
 )
 from note_dancer.visualization_v2.base.receiver import AudioReceiver
 
+LOGICAL_RESOLUTION: tuple[int, int] = (
+    1920,
+    1080,
+)  # (1920, 1080)  # will be upscaled if required, much less load for CPU
+os.environ["SDL_RENDER_SCALE_QUALITY"] = "2"  # upscaling quality (0-2)
+
 
 class AudioVisualizationBase:
-    def __init__(self, width=900, height=900) -> None:
+    def __init__(self) -> None:
         # --- Screen Management ---
-        self.width = width
-        self.height = height
+        self.width = LOGICAL_RESOLUTION[0]
+        self.height = LOGICAL_RESOLUTION[1]
         self.is_fullscreen = False
-        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode(LOGICAL_RESOLUTION, pygame.SCALED | pygame.RESIZABLE)
         self.center = (self.width // 2, self.height // 2)
 
         # --- Engine Core ---
@@ -78,9 +85,9 @@ class AudioVisualizationBase:
         self.is_fullscreen = not self.is_fullscreen
         if self.is_fullscreen:
             # Switch to current desktop resolution
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.screen = pygame.display.set_mode(LOGICAL_RESOLUTION, pygame.SCALED | pygame.FULLSCREEN)
         else:
-            self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+            self.screen = pygame.display.set_mode(LOGICAL_RESOLUTION, pygame.SCALED | pygame.RESIZABLE)
 
         # Update center point for the subclasses
         new_w, new_h = self.screen.get_size()
