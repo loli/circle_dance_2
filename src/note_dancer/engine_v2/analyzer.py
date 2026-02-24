@@ -235,7 +235,14 @@ class AudioAnalyzer:
         else:  # norm_mode = statistical
             results["notes"] = self._note_norm_global_statistical(chroma_clean)
 
-        return results
+        # Debug info (separate from transmission data)
+        debug_info = {
+            "agc_low": float(ref_low),
+            "agc_mid": float(ref_mid),
+            "agc_high": float(ref_high),
+        }
+
+        return results, debug_info
 
     def _note_norm_fixed_gauge(self, chroma_clean) -> list[float]:
         """Fixed-Scale Decibel Mapping.

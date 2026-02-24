@@ -6,8 +6,9 @@ from note_dancer.config import UDP_IP, UDP_PORT_COMMANDS
 
 
 class CommandListener:
-    def __init__(self, analyzer, ip: str = UDP_IP, port: int = UDP_PORT_COMMANDS):
+    def __init__(self, analyzer, ip: str = UDP_IP, port: int = UDP_PORT_COMMANDS, monitor=None):
         self.analyzer = analyzer
+        self.monitor = monitor
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
         self.running = True
@@ -23,6 +24,8 @@ class CommandListener:
                 updates = json.loads(msg.decode())
                 for k, v in updates.items():
                     self.analyzer.update_parameter(k, v)
+                    if self.monitor:
+                        self.monitor.log_command(k, v)
             except socket.timeout:
                 continue
             except Exception:
