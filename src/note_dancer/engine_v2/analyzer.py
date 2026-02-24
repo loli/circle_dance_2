@@ -1,3 +1,4 @@
+import threading
 from collections import deque
 
 import aubio
@@ -90,6 +91,9 @@ class AutoGain:
 
 class AudioAnalyzer:
     def __init__(self):
+        # Thread Safety
+        self.params_lock = threading.Lock()
+
         # Buffers & Memory
         self.audio_buffer = np.zeros(CHUNK * WINDOW_CHUNKS, dtype=np.float32)
         self.prev_percussive_mag = None
@@ -127,8 +131,10 @@ class AudioAnalyzer:
         self.spotlight_peak = 0.01
 
     def update_parameter(self, key, value):
-        if key in self.params:
-            self.params[key] = value
+        """Thread-safe parameter update from CommandListener."""
+        with self.params_lock:
+            if key in self.params:
+                self.params[key] = value
 
     def _get_raw_band_rms(self, samples, sos):
         """
@@ -156,6 +162,14 @@ class AudioAnalyzer:
 
     def process(self, new_samples):
         results = {}
+
+        # Thread-safe: Extract all params once with lock
+        with self.params_lock:
+            low_gain = self.params["low_gain"]
+            mid_gain = self.params["mid_gain"]
+            high_gain = self.params["high_gain"]
+            flux_sens = self.params["flux_sens"]
+            norm_mode = self.params["norm_mode"]
 
         # 1. Beat Detection (Low Latency)
         is_beat = self.tempo_detector(new_samples)
@@ -187,9 +201,9 @@ class AudioAnalyzer:
         # The AutoGain provides the "Base" (raw_low / ref_low)
         # The User provides the "Impact" (low_gain)
         eps = 1e-6
-        results["low"] = float(np.clip((raw_low / (ref_low + eps)) * self.params["low_gain"], 0, 1))
-        results["mid"] = float(np.clip((raw_mid / (ref_mid + eps)) * self.params["mid_gain"], 0, 1))
-        results["high"] = float(np.clip((raw_high / (ref_high + eps)) * self.params["high_gain"], 0, 1))
+        results["low"] = float(np.clip((raw_low / (ref_low + eps)) * low_gain, 0, 1))
+        results["mid"] = float(np.clip((raw_mid / (ref_mid + eps)) * mid_gain, 0, 1))
+        results["high"] = float(np.clip((raw_high / (ref_high + eps)) * high_gain, 0, 1))
 
         # Brightness (Spectral Centroid)
         centroid = librosa.feature.spectral_centroid(S=stft_mag[:, -1:], sr=RATE)[0, 0]
@@ -203,7 +217,7 @@ class AudioAnalyzer:
             if len(self.flux_history) > self.history_limit:
                 self.flux_history.pop(0)
             avg_flux = np.mean(self.flux_history) if self.flux_history else 1.0
-            results["flux"] = float((flux / (avg_flux + 1e-9)) * self.params["flux_sens"])
+            results["flux"] = float((flux / (avg_flux + 1e-9)) * flux_sens)
         else:
             results["flux"] = 0.0
         self.prev_percussive_mag = current_percussive
@@ -214,9 +228,9 @@ class AudioAnalyzer:
         silence_linear = 10 ** (SILENCE_DB / 20)  # Apply absolute threshold to remove silence
         chroma_clean = np.where(chroma_raw < silence_linear, 0.0, chroma_raw)
 
-        if self.params["norm_mode"] == "fixed":
+        if norm_mode == "fixed":
             results["notes"] = self._note_norm_fixed_gauge(chroma_clean)
-        elif self.params["norm_mode"] == "competitive":
+        elif norm_mode == "competitive":
             results["notes"] = self._note_norm_competitive_spotlight(chroma_clean)
         else:  # norm_mode = statistical
             results["notes"] = self._note_norm_global_statistical(chroma_clean)
