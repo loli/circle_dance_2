@@ -1,12 +1,15 @@
 import colorsys
 import math
+from collections import OrderedDict
 
 import pygame
 
 
 class NoteTrace:
-    # Class-level caches shared by all instances
-    _glowing_orb_cache = {}
+    # Class-level LRU cache, shared by all instances
+    # OrderedDict maintains insertion order for LRU eviction
+    _glowing_orb_cache = OrderedDict()
+    _CACHE_MAX_SIZE = 2000  # Keep only 2000 most recent items
 
     def __init__(self, note_index, angle, energy, decay_rate, inner_r, spacing, max_size):
         self.note_index = note_index
@@ -128,6 +131,13 @@ class NoteTrace:
             # 5. OPTIMIZE FOR GPU/CPU BLIT
             # .convert_alpha() is what actually fixes the 4K/High-Res lag
             self._glowing_orb_cache[cache_key] = note_surf.convert_alpha()
+
+            # Simple LRU: evict oldest item if over limit
+            while len(self._glowing_orb_cache) > self._CACHE_MAX_SIZE:
+                self._glowing_orb_cache.popitem(last=False)  # Remove oldest (FIFO)
+        else:
+            # Move to end (mark as recently used)
+            self._glowing_orb_cache.move_to_end(cache_key)
 
         # 6. BLIT (The fast part)
         cached_img = self._glowing_orb_cache[cache_key]

@@ -134,10 +134,8 @@ class RadarVisualizer(AudioVisualizationBase):
         line_color = (255, 255, 255) if events["beat"] else (120, 150, 255)
         pygame.draw.line(screen, line_color, self.center, end_pos, max(1, int(2 * sf)))
 
-        # 8. CLear note cache
+        # 8. Debug info
         print("n-nodes:", len(self.active_traces))
-        if len(NoteTrace._glowing_orb_cache) > 5000:
-            NoteTrace._glowing_orb_cache.clear()
 
     def run(self):
         """Now calling the centralized run in Base class."""
