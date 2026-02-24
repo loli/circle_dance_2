@@ -18,7 +18,9 @@ class AudioStream:
 
     def read(self) -> npt.NDArray[np.float32]:
         """Reads a chunk of audio and returns it as a normalized float32 array."""
-        raw_data = self.stream.read(CHUNK, exception_on_overflow=False)
+        raw_data = self.stream.read(
+            CHUNK, exception_on_overflow=False
+        )  # a droped frame is better than a delayed frame
         audio_array = np.frombuffer(raw_data, dtype=np.float32)
         mono_signal = (audio_array[0::2] + audio_array[1::2]) / 2.0
         return mono_signal

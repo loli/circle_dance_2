@@ -17,5 +17,5 @@ class CommandListener:
                 updates = json.loads(msg.decode())
                 for k, v in updates.items():
                     self.analyzer.update_parameter(k, v)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Command listener error: {e}")

@@ -55,7 +55,11 @@ class AudioReceiver:
             try:
                 data, _ = self.sock.recvfrom(self.packet_size)
 
-                if len(data) == self.packet_size:
+                # Validate packet size before attempting to unpack
+                if len(data) != self.packet_size:
+                    continue  # Skip malformed packet, try next one
+
+                try:
                     unpacked = struct.unpack(self.packet_format, data)
                     self.latest_data = {
                         "brightness": unpacked[0],
@@ -67,6 +71,11 @@ class AudioReceiver:
                         "is_beat": unpacked[6] > 0.5,  # Convert float to bool
                         "notes": list(unpacked[7:]),
                     }
+                except struct.error as e:
+                    # Unpack failed, skip this packet and try next one
+                    print(f"Malformed packet (unpack error): {e}")
+                    continue
+
             except socket.error as e:
                 # EAGAIN or EWOULDBLOCK means the buffer is finally empty
                 err = e.args[0]
