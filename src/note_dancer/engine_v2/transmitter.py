@@ -24,3 +24,7 @@ class NetworkTransmitter:
             self.sock.sendto(payload, self.dest)
         except Exception as e:
             print(f"Send Error: {e}")
+
+    def close(self) -> None:
+        """Closes the UDP socket."""
+        self.sock.close()

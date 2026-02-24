@@ -10,7 +10,7 @@ def run_engine():
     transmitter = NetworkTransmitter()
 
     # Start listening for parameter changes from the frontend
-    _ = CommandListener(analyzer)
+    command_listener = CommandListener(analyzer)
 
     print("Analyzer Active. Listening for commands on 5006, Sending data on 5005.")
 
@@ -25,6 +25,8 @@ def run_engine():
         raise e
     finally:
         stream.close()
+        transmitter.close()
+        command_listener.close()
 
 
 if __name__ == "__main__":
