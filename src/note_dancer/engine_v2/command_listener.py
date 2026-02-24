@@ -2,12 +2,14 @@ import json
 import socket
 import threading
 
+from note_dancer.config import UDP_IP, UDP_PORT_COMMANDS
+
 
 class CommandListener:
-    def __init__(self, analyzer, port=5006):
+    def __init__(self, analyzer, ip: str = UDP_IP, port: int = UDP_PORT_COMMANDS):
         self.analyzer = analyzer
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind(("127.0.0.1", port))
+        self.sock.bind((ip, port))
         self.running = True
         self.thread = threading.Thread(target=self._listen, daemon=True)
         self.thread.start()

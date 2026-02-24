@@ -1,3 +1,5 @@
+from note_dancer.config import UDP_PORT_COMMANDS, UDP_PORT_ENGINE
+
 from .analyzer import AudioAnalyzer
 from .command_listener import CommandListener
 from .stream import AudioStream
@@ -12,7 +14,7 @@ def run_engine():
     # Start listening for parameter changes from the frontend
     command_listener = CommandListener(analyzer)
 
-    print("Analyzer Active. Listening for commands on 5006, Sending data on 5005.")
+    print(f"Analyzer Active. Listening for commands on {UDP_PORT_COMMANDS}, Sending data on {UDP_PORT_ENGINE}.")
 
     try:
         while True:

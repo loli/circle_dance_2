@@ -2,9 +2,11 @@ import errno
 import socket
 import struct
 
+from note_dancer.config import UDP_IP, UDP_PORT_ENGINE
+
 
 class AudioReceiver:
-    def __init__(self, ip="127.0.0.1", port=5005):
+    def __init__(self, ip: str = UDP_IP, port: int = UDP_PORT_ENGINE):
         """
         Initializes the UDP receiver for the AudioAnalyzer data.
         The packet format is !19f (76 bytes).
@@ -98,7 +100,7 @@ if __name__ == "__main__":
     receiver = AudioReceiver()
     try:
         while True:
-            data = receiver.wait_for_packet()
+            data = receiver.get_latest()
             if data:
                 # Example: Accessing specific values
                 if data["is_beat"]:

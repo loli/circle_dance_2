@@ -1,9 +1,11 @@
 import socket
 import struct
 
+from note_dancer.config import UDP_IP, UDP_PORT_ENGINE
+
 
 class NetworkTransmitter:
-    def __init__(self, ip="127.0.0.1", port=5005):
+    def __init__(self, ip: str = UDP_IP, port: int = UDP_PORT_ENGINE):
         self.dest = (ip, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.fmt = "!19f"  # 7 control floats + 12 chroma floats
