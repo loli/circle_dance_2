@@ -43,16 +43,17 @@ class AudioReceiver:
         except Exception as e:
             print(f"Error binding socket: {e}")
 
-    def get_latest(self):
+    def get_latest(self) -> tuple[dict, int]:
         """
         Non-blocking fetch. Clears the UDP buffer to get the MOST RECENT packet.
-        Returns the data dictionary.
+        Returns tuple of (data dictionary, number of packets drained from buffer).
         """
         if not self._is_bound:
             self.bind()
 
         # We loop until the buffer is empty. This prevents 'visual lag'
         # caused by packets queuing up in the OS network stack.
+        packets_drained = 0
         while True:
             try:
                 data, _ = self.sock.recvfrom(self.packet_size)
@@ -73,6 +74,7 @@ class AudioReceiver:
                         "is_beat": unpacked[6] > 0.5,  # Convert float to bool
                         "notes": list(unpacked[7:]),
                     }
+                    packets_drained += 1
                 except struct.error as e:
                     # Unpack failed, skip this packet and try next one
                     print(f"Malformed packet (unpack error): {e}")
@@ -88,7 +90,7 @@ class AudioReceiver:
                     print(f"Socket error: {e}")
                     break
 
-        return self.latest_data
+        return self.latest_data, packets_drained
 
     def close(self):
         """Closes the socket."""
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     receiver = AudioReceiver()
     try:
         while True:
-            data = receiver.get_latest()
+            data, _ = receiver.get_latest()
             if data:
                 # Example: Accessing specific values
                 if data["is_beat"]:

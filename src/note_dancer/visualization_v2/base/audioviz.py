@@ -1,9 +1,11 @@
 import collections
 import os
 import sys
+import time
 
 import pygame
 
+from note_dancer.visualization_v2.base.debug_overlay import DebugOverlay
 from note_dancer.visualization_v2.base.hud import HUD
 from note_dancer.visualization_v2.base.parameters import (
     ChromaSensitivityParameter,
@@ -35,7 +37,9 @@ class AudioVisualizationBase:
         self.receiver = AudioReceiver()
         self.receiver.bind()
         self.hud = HUD()
+        self.debug_overlay = DebugOverlay()
         self.clock = pygame.time.Clock()
+        self.last_frame_time = time.time()
 
         # --- 1. Audio Parameters (Gains & Thresholds) ---
         self.flux_thr = self.hud.register(EngineParameter("norm_mode", 0, 0, 2, 1, category="global"))
@@ -106,6 +110,8 @@ class AudioVisualizationBase:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_f:  # 'F' for Fullscreen
                     self.toggle_fullscreen()
+                if event.key == pygame.K_d:  # 'D' for Debug overlay
+                    self.debug_overlay.visible = not self.debug_overlay.visible
                 if event.key == pygame.K_ESCAPE:  # 'ESC' to quit
                     return False
                 # Pass other keys to the HUD
@@ -152,7 +158,7 @@ class AudioVisualizationBase:
         Fetches raw data, hedges BPM, and applies per-band
         asymmetric smoothing (Attack/Decay).
         """
-        packet = self.receiver.get_latest()
+        packet, self.packets_drained = self.receiver.get_latest()
         if not packet:
             return None
 
@@ -195,6 +201,9 @@ class AudioVisualizationBase:
         The Master Draw Method.
         Now feeds expanded data to the HUD for better visualizations.
         """
+        frame_time_ms = (time.time() - self.last_frame_time) * 1000.0
+        self.last_frame_time = time.time()
+
         # 1. Execute the 'Art' (Subclass logic)
         self.render_visualization(screen, font)
 
@@ -217,6 +226,19 @@ class AudioVisualizationBase:
 
         # 3. Draw the HUD (passes context to all parameters)
         self.hud.draw(screen, font, audio_state=context, fps=self.clock.get_fps())
+
+        # 4. Update and draw debug overlay
+        if self.debug_overlay.visible:
+            active_traces = getattr(self, "_active_traces_count", 0)
+            cache_size = getattr(self, "_cache_size", 0)
+            self.debug_overlay.update(
+                frame_time_ms,
+                self.packets_drained,
+                self.data,
+                active_traces,
+                cache_size,
+            )
+            self.debug_overlay.draw(screen, font)
 
     def render_visualization(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         raise NotImplementedError("Subclasses must implement render_visualization")
