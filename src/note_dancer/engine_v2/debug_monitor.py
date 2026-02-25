@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 
-from note_dancer.config import RATE
+from note_dancer.config import CHUNK, RATE
 
 
 class DebugMonitor:
@@ -19,8 +19,12 @@ class DebugMonitor:
     Real-time monitor for audio engine performance and audio quality.
 
     Prints a summary line every N seconds with the following metrics:
-    - FPS: Frames per second (processing rate).
-    - Latency: Average frame processing time in ms, with peak (Δ) in this window.
+    - Packet FPS: Hardware-imposed frame rate (RATE / CHUNK = absolute ceiling).
+      This is the rate at which UDP packets are sent to the frontend.
+    - Processing FPS: CPU efficiency (frames / CPU processing time).
+      Shows how much faster the CPU could process if more samples arrived.
+      Actual output is min(Packet FPS, Processing FPS).
+    - Latency: Average frame processing time in ms, with peak in this window.
     - Input: Input signal level in dB (detect clipping or silence).
     - Silence: Percentage of frames below -40dB threshold.
     - Beats: Number of beat detections per second (sanity check against BPM).
@@ -153,12 +157,16 @@ class DebugMonitor:
         time_str = f"{minutes:02d}:{seconds:02d}"
 
         # Calculate FPS and latency stats
+        # Packet FPS: hardware limit (RATE / CHUNK) = actual output rate
+        packet_fps = RATE / CHUNK
+
+        # Processing FPS: CPU efficiency (frames / CPU processing time)
         if self.frame_times:
-            fps = len(self.frame_times) / (sum(self.frame_times) / 1000.0)
+            processing_fps = len(self.frame_times) / (sum(self.frame_times) / 1000.0)
             avg_latency = np.mean(self.frame_times)
             max_latency = np.max(self.frame_times)
         else:
-            fps = 0.0
+            processing_fps = 0.0
             avg_latency = 0.0
             max_latency = 0.0
 
@@ -183,9 +191,10 @@ class DebugMonitor:
         elif input_db < -40:
             status = "⚠ SILENCE"
 
-        # Format summary line to match proposed format
+        # Format summary line with both FPS metrics
         summary = (
-            f"[{time_str}] FPS: {fps:5.1f} | "
+            f"[{time_str}] Packet FPS: {packet_fps:5.1f} (hardware limit) |"
+            f" Processing FPS: {processing_fps:5.1f} (CPU efficiency) | "
             f"Latency: {avg_latency:5.1f}ms (max {max_latency:5.1f}ms) | "
             f"Input: {input_db:6.1f}dB | "
             f"Beats: {beat_freq:4.1f}/s (BPM: {self.current_bpm:.0f}) | "
