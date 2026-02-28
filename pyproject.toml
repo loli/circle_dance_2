@@ -28,9 +28,6 @@ dependencies = ["pyaudio", "numpy", "librosa", "aubio", "pygame"]
 dev = ["pytest", "ruff", "mypy"]
 
 [project.scripts]
-audio-engine = "note_dancer.engine.main:run_engine"
-viz-radar = "note_dancer.visualization.radar.radar:main"
-
 audio-engine-v2 = "note_dancer.engine_v2.main:run_engine"
 viz-cli = "note_dancer.visualization_v2.cli.cli:run"
 viz-simple = "note_dancer.visualization_v2.dashboard.dashboard:run"
