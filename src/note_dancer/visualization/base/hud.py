@@ -4,7 +4,7 @@ import time
 
 import pygame
 
-from note_dancer.visualization_v2.base.parameters_base import (
+from note_dancer.visualization.base.parameters_base import (
     BooleanParameter,
     NumericParameter,
     ParameterContainer,

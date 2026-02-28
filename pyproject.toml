@@ -28,12 +28,12 @@ dependencies = ["pyaudio", "numpy", "librosa", "aubio", "pygame"]
 dev = ["pytest", "ruff", "mypy"]
 
 [project.scripts]
-audio-engine-v2 = "note_dancer.engine_v2.main:run_engine"
-viz-cli = "note_dancer.visualization_v2.cli.cli:run"
-viz-simple = "note_dancer.visualization_v2.dashboard.dashboard:run"
-viz-radar-v2 = "note_dancer.visualization_v2.radar.radar:run"
-viz-monolith = "note_dancer.visualization_v2.monolith.monolith:run"
-viz-snake = "note_dancer.visualization_v2.snake.snake:run"
+audio-engine = "note_dancer.engine.main:run_engine"
+viz-cli = "note_dancer.visualization.cli.cli:run"
+viz-simple = "note_dancer.visualization.dashboard.dashboard:run"
+viz-radar = "note_dancer.visualization.radar.radar:run"
+viz-monolith = "note_dancer.visualization.monolith.monolith:run"
+viz-snake = "note_dancer.visualization.snake.snake:run"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

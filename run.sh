@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # start engine in background (runs the function directly so it uses the same env)
-uv run audio-engine-v2 &
+uv run audio-engine &
 ENGINE_PID=$!
 
 # ensure engine is killed on exit/signals
@@ -17,9 +17,9 @@ trap _cleanup INT TERM EXIT
 sleep 1
 
 # run visualizer (foreground)
-#uv run receiver-v2
+#uv run receiver
 #uv run viz-simple
-uv run viz-radar-v2
+uv run viz-radar
 #uv run viz-monolith
 
 # cleanup will run via trap

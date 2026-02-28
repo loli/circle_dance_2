@@ -2,7 +2,7 @@ import sys
 
 import pygame
 
-from note_dancer.visualization_v2.base.audioviz import AudioVisualizationBase
+from note_dancer.visualization.base.audioviz import AudioVisualizationBase
 
 # Constants
 WIDTH, HEIGHT = 800, 600

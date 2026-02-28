@@ -3,8 +3,8 @@ import math
 
 import pygame
 
-from note_dancer.visualization_v2.base.audioviz import AudioVisualizationBase
-from note_dancer.visualization_v2.base.hud import BooleanParameter, NumericParameter
+from note_dancer.visualization.base.audioviz import AudioVisualizationBase
+from note_dancer.visualization.base.hud import BooleanParameter, NumericParameter
 
 
 class MonolithVisualizer(AudioVisualizationBase):

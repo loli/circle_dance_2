@@ -5,9 +5,9 @@ import time
 
 import pygame
 
-from note_dancer.visualization_v2.base.debug_overlay import DebugOverlay
-from note_dancer.visualization_v2.base.hud import HUD
-from note_dancer.visualization_v2.base.parameters import (
+from note_dancer.visualization.base.debug_overlay import DebugOverlay
+from note_dancer.visualization.base.hud import HUD
+from note_dancer.visualization.base.parameters import (
     ChromaSensitivityParameter,
     EngineParameter,
     Envelope,
@@ -15,7 +15,7 @@ from note_dancer.visualization_v2.base.parameters import (
     NumericParameter,
     SpectrumGainParameter,
 )
-from note_dancer.visualization_v2.base.receiver import AudioReceiver
+from note_dancer.visualization.base.receiver import AudioReceiver
 
 LOGICAL_RESOLUTION: tuple[int, int] = (
     1920,

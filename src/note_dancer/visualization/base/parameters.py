@@ -2,8 +2,8 @@
 
 import pygame
 
-from note_dancer.visualization_v2.base.hud import NumericParameter
-from note_dancer.visualization_v2.base.parameters_base import EngineParameter, ParameterContainer
+from note_dancer.visualization.base.hud import NumericParameter
+from note_dancer.visualization.base.parameters_base import EngineParameter, ParameterContainer
 
 
 # Parameters with built-in visualizations

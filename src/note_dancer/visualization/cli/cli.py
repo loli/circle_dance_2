@@ -1,6 +1,6 @@
 import sys
 
-from note_dancer.visualization_v2.base.receiver import AudioReceiver
+from note_dancer.visualization.base.receiver import AudioReceiver
 
 
 def run():

@@ -4,8 +4,8 @@ import time
 
 import pygame
 
-from note_dancer.visualization_v2.base.audioviz import AudioVisualizationBase
-from note_dancer.visualization_v2.base.hud import NumericParameter
+from note_dancer.visualization.base.audioviz import AudioVisualizationBase
+from note_dancer.visualization.base.hud import NumericParameter
 
 # --- Configuration ---
 COLOR_SNAKE_HEAD = (180, 180, 180)
